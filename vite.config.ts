@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
-      // تقسيم الكود لملفات أصغر
+      //  ku تقسيم الكود لملفات أصغر
       rollupOptions: {
         output: {
           manualChunks: {
