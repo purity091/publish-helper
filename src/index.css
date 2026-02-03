@@ -1,22 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --primary: #4f46e5;
-  --secondary: #1e293b;
+@theme {
+  --color-primary: #4f46e5;
+  --color-secondary: #1e293b;
+  --font-serif: 'IBM Plex Sans Arabic', sans-serif;
+  --font-sans: 'IBM Plex Sans Arabic', 'ui-sans-serif', 'system-ui', 'sans-serif';
 }
 
-body {
-  font-family: 'IBM Plex Sans Arabic', sans-serif;
-  background-color: #fcfdfe;
-  color: #1e293b;
-}
-
-.font-serif {
-  font-family: 'IBM Plex Sans Arabic', sans-serif;
-}
-
+/* Custom Utilities */
 .glass-card {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(10px);
@@ -25,7 +16,7 @@ body {
 
 .step-active {
   position: relative;
-  color: var(--primary);
+  color: var(--color-primary);
 }
 
 .step-active::after {
@@ -35,8 +26,15 @@ body {
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--primary);
+  background: var(--color-primary);
   border-radius: 2px;
+}
+
+/* Global Styles */
+body {
+  font-family: var(--font-serif);
+  background-color: #fcfdfe;
+  color: #1e293b;
 }
 
 /* Scrollbar styling */
