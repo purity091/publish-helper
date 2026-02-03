@@ -250,27 +250,32 @@ const App: React.FC = () => {
       {/* Navigation Stepper */}
       <nav className="sticky top-0 z-50 glass-card border-b border-slate-200 px-6 py-4 mb-8">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <button
+            onClick={() => setStep(AppStep.SETUP)}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            title="العودة للوحة التحكم"
+          >
             <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100">
               <span className="text-white font-bold text-xl">P</span>
             </div>
             <h1 className="text-xl font-serif font-bold tracking-tight hidden sm:block">برو رايتر (ProWriter)</h1>
-          </div>
+          </button>
 
-          {step !== AppStep.SETUP && step !== AppStep.PUBLISH_READY && (
+          {step !== AppStep.SETUP && (
             <div className="flex items-center gap-4 md:gap-8">
               {[
-                { s: AppStep.OUTLINE, label: 'الهيكل' },
-                { s: AppStep.KNOWLEDGE_BASE, label: 'المعرفة' },
-                { s: AppStep.WRITING, label: 'المسودة' },
-                { s: AppStep.PREVIEW, label: 'المعاينة' },
-                { s: AppStep.PUBLISH_READY, label: 'النشر' }
+                { s: AppStep.OUTLINE, label: 'الهيكل', icon: '📋' },
+                { s: AppStep.KNOWLEDGE_BASE, label: 'المعرفة', icon: '🧠' },
+                { s: AppStep.WRITING, label: 'المسودة', icon: '✍️' },
+                { s: AppStep.PREVIEW, label: 'المعاينة', icon: '👁️' },
+                { s: AppStep.PUBLISH_READY, label: 'النشر', icon: '🚀' }
               ].map((item, idx) => (
                 <button
                   key={idx}
                   onClick={() => setStep(item.s)}
-                  className={`text-sm font-bold transition-all cursor-pointer hover:scale-105 ${step === item.s ? 'step-active scale-110 text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`text-sm font-bold transition-all cursor-pointer hover:scale-105 flex items-center gap-1 ${step === item.s ? 'step-active scale-110 text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
                 >
+                  <span className="hidden md:inline">{item.icon}</span>
                   {item.label}
                 </button>
               ))}
