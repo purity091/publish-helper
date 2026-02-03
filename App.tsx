@@ -16,7 +16,6 @@ import * as auth from './services/authService';
 const App: React.FC = () => {
   // Auth State
   const [currentUser, setCurrentUser] = useState<auth.UserProfile | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
 
   // s App State
@@ -34,7 +33,6 @@ const App: React.FC = () => {
     const checkAuth = async () => {
       const user = await auth.getCurrentUser();
       setCurrentUser(user);
-      setIsAuthLoading(false);
     };
     checkAuth();
 
@@ -212,20 +210,6 @@ const App: React.FC = () => {
   };
 
   const sectionsComplete = state.sections.filter(s => s.content.length > 0).length;
-
-  // Loading State
-  if (isAuthLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <span className="text-white font-bold text-2xl">P</span>
-          </div>
-          <p className="text-white/60">جاري التحميل...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Auth Required - Show Login
   if (!currentUser && db.isSupabaseAvailable()) {
