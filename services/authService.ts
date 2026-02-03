@@ -127,6 +127,9 @@ export const signOut = async (): Promise<void> => {
         console.warn('Could not log activity:', e);
     }
 
+    // مسح cache الدور
+    clearRoleCache();
+
     await supabase.auth.signOut();
 };
 
@@ -272,90 +275,124 @@ export const endSession = async (): Promise<void> => {
 
 // ============ دوال SuperAdmin ============
 
-export const getAllEditors = async (): Promise<(UserProfile & { stats?: EditorStats })[]> => {
-    if (!supabase) return [];
+// Cache للتحقق من الصلاحيات (صالح لمدة 5 دقائق)
+let cachedRole: { role: string; timestamp: number } | null = null;
+const ROLE_CACHE_DURATION = 5 * 60 * 1000; // 5 دقائق
 
-    const { data: currentUser } = await supabase.auth.getUser();
-    if (!currentUser.user) return [];
+const checkSuperadminRole = async (): Promise<boolean> => {
+    if (!supabase) return false;
 
-    // التحقق من صلاحية superadmin
+    // استخدام الـ cache إذا كان صالحاً
+    if (cachedRole && Date.now() - cachedRole.timestamp < ROLE_CACHE_DURATION) {
+        return cachedRole.role === 'superadmin';
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
     const { data: profile } = await supabase
         .from('user_profiles')
         .select('role')
-        .eq('id', currentUser.user.id)
+        .eq('id', user.id)
         .single();
 
-    if (profile?.role !== 'superadmin') return [];
+    if (profile) {
+        cachedRole = { role: profile.role, timestamp: Date.now() };
+    }
 
-    const { data: editors } = await supabase
-        .from('user_profiles')
-        .select(`
-            *,
-            editor_stats (*)
-        `)
-        .order('created_at', { ascending: false });
+    return profile?.role === 'superadmin';
+};
 
-    return editors?.map(e => ({
-        ...e,
-        stats: e.editor_stats?.[0] || null
-    })) || [];
+// مسح الـ cache عند تسجيل الخروج
+export const clearRoleCache = () => {
+    cachedRole = null;
+};
+
+export const getAllEditors = async (): Promise<(UserProfile & { stats?: EditorStats })[]> => {
+    if (!supabase) return [];
+
+    const isSuperadmin = await checkSuperadminRole();
+    if (!isSuperadmin) return [];
+
+    try {
+        const { data: editors, error } = await supabase
+            .from('user_profiles')
+            .select(`
+                *,
+                editor_stats (*)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching editors:', error);
+            return [];
+        }
+
+        return editors?.map(e => ({
+            ...e,
+            stats: e.editor_stats?.[0] || null
+        })) || [];
+    } catch (error) {
+        console.error('getAllEditors error:', error);
+        return [];
+    }
 };
 
 export const getEditorActivities = async (userId?: string, limit = 50): Promise<ActivityLog[]> => {
     if (!supabase) return [];
 
-    const { data: currentUser } = await supabase.auth.getUser();
-    if (!currentUser.user) return [];
+    const isSuperadmin = await checkSuperadminRole();
+    if (!isSuperadmin) return [];
 
-    // التحقق من صلاحية superadmin
-    const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', currentUser.user.id)
-        .single();
+    try {
+        let query = supabase
+            .from('activity_logs')
+            .select(`
+                *,
+                user:user_profiles (id, email, full_name, role)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(limit);
 
-    if (profile?.role !== 'superadmin') return [];
+        if (userId) {
+            query = query.eq('user_id', userId);
+        }
 
-    let query = supabase
-        .from('activity_logs')
-        .select(`
-            *,
-            user:user_profiles (id, email, full_name, role)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-    if (userId) {
-        query = query.eq('user_id', userId);
+        const { data, error } = await query;
+        if (error) {
+            console.error('Error fetching activities:', error);
+            return [];
+        }
+        return data || [];
+    } catch (error) {
+        console.error('getEditorActivities error:', error);
+        return [];
     }
-
-    const { data } = await query;
-    return data || [];
 };
 
 export const getEditorSessions = async (userId: string): Promise<any[]> => {
     if (!supabase) return [];
 
-    const { data: currentUser } = await supabase.auth.getUser();
-    if (!currentUser.user) return [];
+    const isSuperadmin = await checkSuperadminRole();
+    if (!isSuperadmin) return [];
 
-    // التحقق من صلاحية superadmin
-    const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', currentUser.user.id)
-        .single();
+    try {
+        const { data, error } = await supabase
+            .from('user_sessions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('started_at', { ascending: false })
+            .limit(30);
 
-    if (profile?.role !== 'superadmin') return [];
-
-    const { data } = await supabase
-        .from('user_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('started_at', { ascending: false })
-        .limit(30);
-
-    return data || [];
+        if (error) {
+            console.error('Error fetching sessions:', error);
+            return [];
+        }
+        return data || [];
+    } catch (error) {
+        console.error('getEditorSessions error:', error);
+        return [];
+    }
 };
 
 export const updateEditorStats = async (userId: string): Promise<void> => {
