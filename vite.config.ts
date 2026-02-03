@@ -19,6 +19,28 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       }
+    },
+    build: {
+      // تقسيم الكود لملفات أصغر
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // المكتبات الكبيرة في chunks منفصلة
+            'vendor-react': ['react', 'react-dom'],
+            'vendor-supabase': ['@supabase/supabase-js'],
+            'vendor-openai': ['openai'],
+          }
+        }
+      },
+      // رفع حد التحذير (اختياري)
+      chunkSizeWarningLimit: 600,
+      // تسريع البناء
+      sourcemap: false,
+      minify: 'esbuild', // أسرع من terser
+    },
+    // تحسين التطوير
+    optimizeDeps: {
+      include: ['react', 'react-dom', '@supabase/supabase-js']
     }
   };
 });
