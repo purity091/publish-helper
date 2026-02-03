@@ -354,14 +354,33 @@ export const onAuthStateChange = (callback: (user: UserProfile | null) => void) 
         return () => { };
     }
 
+    let isSubscribed = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        // تجاهل إذا تم إلغاء الاشتراك
+        if (!isSubscribed) return;
+
         if (session?.user) {
-            const profile = await getCurrentUser();
-            callback(profile);
+            try {
+                const profile = await getCurrentUser();
+                if (isSubscribed) {
+                    callback(profile);
+                }
+            } catch (error) {
+                // تجاهل أخطاء الإلغاء
+                if (isSubscribed) {
+                    console.error('Auth state error:', error);
+                }
+            }
         } else {
-            callback(null);
+            if (isSubscribed) {
+                callback(null);
+            }
         }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+        isSubscribed = false;
+        subscription.unsubscribe();
+    };
 };
