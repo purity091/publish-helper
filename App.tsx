@@ -19,7 +19,7 @@ const App: React.FC = () => {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
 
-  // App State
+  // s App State
   const [step, setStep] = useState<AppStep>(AppStep.SETUP);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
   const [state, setState] = useState<ArticleState>({
