@@ -416,6 +416,9 @@ export const deleteGeneratedArticle = async (id: string): Promise<boolean> => {
     return true;
 };
 
+// Alias للاستخدام في لوحة التحكم
+export const getAllGeneratedArticles = fetchGeneratedArticles;
+
 // ============ EXPANSION METHODS (أساليب التحرير) ============
 
 export interface ExpansionMethodDB {

@@ -81,18 +81,30 @@ export const signIn = async (email: string, password: string): Promise<{ success
         return { success: false, error: error.message };
     }
 
-    // تحديث وقت آخر تسجيل دخول
+    // محاولة تحديث وقت آخر تسجيل دخول (تجاهل الأخطاء)
     if (data.user) {
-        await supabase
-            .from('user_profiles')
-            .update({ last_login_at: new Date().toISOString() })
-            .eq('id', data.user.id);
+        try {
+            await supabase
+                .from('user_profiles')
+                .update({ last_login_at: new Date().toISOString() })
+                .eq('id', data.user.id);
+        } catch (e) {
+            console.warn('Could not update last_login_at:', e);
+        }
 
-        // تسجيل النشاط
-        await logActivity('login');
+        // محاولة تسجيل النشاط (تجاهل الأخطاء)
+        try {
+            await logActivity('login');
+        } catch (e) {
+            console.warn('Could not log activity:', e);
+        }
 
-        // بدء جلسة جديدة
-        await startSession();
+        // محاولة بدء جلسة جديدة (تجاهل الأخطاء)
+        try {
+            await startSession();
+        } catch (e) {
+            console.warn('Could not start session:', e);
+        }
     }
 
     return { success: true };
@@ -101,11 +113,19 @@ export const signIn = async (email: string, password: string): Promise<{ success
 export const signOut = async (): Promise<void> => {
     if (!supabase) return;
 
-    // إنهاء الجلسة الحالية
-    await endSession();
+    // محاولة إنهاء الجلسة (تجاهل الأخطاء)
+    try {
+        await endSession();
+    } catch (e) {
+        console.warn('Could not end session:', e);
+    }
 
-    // تسجيل النشاط
-    await logActivity('logout');
+    // محاولة تسجيل النشاط (تجاهل الأخطاء)
+    try {
+        await logActivity('logout');
+    } catch (e) {
+        console.warn('Could not log activity:', e);
+    }
 
     await supabase.auth.signOut();
 };
@@ -113,17 +133,37 @@ export const signOut = async (): Promise<void> => {
 export const getCurrentUser = async (): Promise<UserProfile | null> => {
     if (!supabase) return null;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return null;
+        if (!user) return null;
 
-    const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+        const { data: profile, error } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
 
-    return profile;
+        // إذا لم يوجد profile، أنشئ واحد افتراضي من بيانات auth
+        if (error || !profile) {
+            console.warn('No profile found, using auth data');
+            return {
+                id: user.id,
+                email: user.email || '',
+                full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'مستخدم',
+                role: 'editor',
+                avatar_url: null,
+                is_active: true,
+                last_login_at: new Date().toISOString(),
+                created_at: user.created_at || new Date().toISOString()
+            };
+        }
+
+        return profile;
+    } catch (error) {
+        console.error('getCurrentUser error:', error);
+        return null;
+    }
 };
 
 export const updateProfile = async (updates: Partial<UserProfile>): Promise<boolean> => {
