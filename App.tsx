@@ -45,6 +45,8 @@ const App: React.FC = () => {
   }, []);
 
   const handleSignOut = async () => {
+    if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
+
     await auth.signOut();
     setCurrentUser(null);
     setStep(AppStep.SETUP);

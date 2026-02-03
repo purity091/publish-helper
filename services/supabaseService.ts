@@ -20,8 +20,23 @@ if (!hasValidCredentials) {
     console.warn('Supabase credentials not found or invalid. Using localStorage fallback.');
 }
 
+// إعدادات محسنة للأداء
 export const supabase: SupabaseClient | null = hasValidCredentials
-    ? createClient(supabaseUrl, supabaseAnonKey)
+    ? createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: false, // تعطيل للسرعة
+        },
+        global: {
+            headers: {
+                'X-Client-Info': 'prowriter-app'
+            }
+        },
+        db: {
+            schema: 'public'
+        }
+    })
     : null;
 
 // Types

@@ -7,41 +7,22 @@ interface AuthPageProps {
 }
 
 export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
-    const [mode, setMode] = useState<'login' | 'register'>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [fullName, setFullName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
-        setSuccess(null);
         setIsLoading(true);
 
         try {
-            if (mode === 'login') {
-                const result = await auth.signIn(email, password);
-                if (result.success) {
-                    onSuccess();
-                } else {
-                    setError(result.error || 'حدث خطأ في تسجيل الدخول');
-                }
+            const result = await auth.signIn(email, password);
+            if (result.success) {
+                onSuccess();
             } else {
-                if (!fullName.trim()) {
-                    setError('الاسم الكامل مطلوب');
-                    setIsLoading(false);
-                    return;
-                }
-                const result = await auth.signUp(email, password, fullName);
-                if (result.success) {
-                    setSuccess('تم إنشاء الحساب بنجاح! تحقق من بريدك الإلكتروني للتأكيد.');
-                    setMode('login');
-                } else {
-                    setError(result.error || 'حدث خطأ في إنشاء الحساب');
-                }
+                setError(result.error || 'حدث خطأ في تسجيل الدخول');
             }
         } finally {
             setIsLoading(false);
@@ -71,44 +52,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
 
                 {/* Auth Card */}
                 <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
-                    {/* Tabs */}
-                    <div className="flex bg-white/10 rounded-xl p-1 mb-6">
-                        <button
-                            onClick={() => setMode('login')}
-                            className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all ${mode === 'login'
-                                    ? 'bg-emerald-500 text-white shadow-lg'
-                                    : 'text-slate-300 hover:text-white'
-                                }`}
-                        >
-                            تسجيل الدخول
-                        </button>
-                        <button
-                            onClick={() => setMode('register')}
-                            className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all ${mode === 'register'
-                                    ? 'bg-emerald-500 text-white shadow-lg'
-                                    : 'text-slate-300 hover:text-white'
-                                }`}
-                        >
-                            حساب جديد
-                        </button>
-                    </div>
+                    {/* Title */}
+                    <h2 className="text-xl font-bold text-white text-center mb-6">تسجيل الدخول</h2>
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-5">
-                        {mode === 'register' && (
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">الاسم الكامل</label>
-                                <input
-                                    type="text"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                                    placeholder="أدخل اسمك الكامل"
-                                    required={mode === 'register'}
-                                />
-                            </div>
-                        )}
-
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">البريد الإلكتروني</label>
                             <input
@@ -134,15 +82,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                             />
                         </div>
 
-                        {/* Error/Success Messages */}
+                        {/* Error Message */}
                         {error && (
                             <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-red-300 text-sm">
                                 ⚠️ {error}
-                            </div>
-                        )}
-                        {success && (
-                            <div className="bg-emerald-500/20 border border-emerald-500/50 rounded-xl p-4 text-emerald-300 text-sm">
-                                ✅ {success}
                             </div>
                         )}
 
@@ -162,7 +105,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                                 </>
                             ) : (
                                 <>
-                                    <span>{mode === 'login' ? 'دخول' : 'إنشاء حساب'}</span>
+                                    <span>دخول</span>
                                     <svg className="w-5 h-5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                     </svg>
@@ -174,13 +117,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
 
                 {/* Footer */}
                 <p className="text-center text-slate-500 text-sm mt-6">
-                    {mode === 'login' ? 'ليس لديك حساب؟' : 'لديك حساب بالفعل؟'}{' '}
-                    <button
-                        onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-                        className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
-                    >
-                        {mode === 'login' ? 'سجل الآن' : 'سجل دخولك'}
-                    </button>
+                    للحصول على حساب، تواصل مع المسؤول
                 </p>
             </div>
         </div>
