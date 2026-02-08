@@ -498,46 +498,46 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                     <div className="text-slate-400 text-xs">المقال: {topic}</div>
                 </header>
 
-                <main className="p-8 pb-20">
+                <main className="p-5 pb-16">
                     {view === 'editor' ? (
-                        <div className="space-y-6 animate-in">
+                        <div className="space-y-4 animate-in">
                             {/* Generate Button */}
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
-                                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                    <span className="w-2 h-6 bg-emerald-600 rounded-full"></span>
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+                                <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2 text-sm">
+                                    <span className="w-1.5 h-5 bg-emerald-600 rounded-full"></span>
                                     توليد البيانات الوصفية للنشر
                                 </h3>
-                                <p className="text-slate-500 text-sm mb-6">
-                                    سيتم تحليل محتوى المقال "{topic}" وتوليد العناوين، الكلمات المفتاحية، التشويقيات، وباقي البيانات الوصفية.
+                                <p className="text-slate-500 text-xs mb-3 line-clamp-1">
+                                    تحليل المقال "{topic}" وتوليد البيانات الوصفية
                                 </p>
                                 <button
                                     onClick={handleGenerate}
                                     disabled={isGenerating}
-                                    className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold py-4 rounded-2xl transition-all shadow-xl shadow-emerald-200 flex items-center justify-center gap-2"
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 text-sm"
                                 >
                                     {isGenerating ? (
-                                        <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                     ) : (
-                                        <>بدء التوليد الذكي <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></>
+                                        <>بدء التوليد الذكي <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></>
                                     )}
                                 </button>
-                                {error && <div className="mt-4 text-red-600 bg-red-50 p-4 rounded-xl text-sm border border-red-100">{error}</div>}
+                                {error && <div className="mt-3 text-red-600 bg-red-50 p-3 rounded-lg text-xs border border-red-100">{error}</div>}
                             </div>
 
                             {/* Copy All Button */}
-                            <div className={`p-5 rounded-3xl shadow-lg flex items-center justify-between transition-all duration-500 sticky top-20 z-30 ${hasGeneratedOnce ? 'bg-emerald-600 translate-y-0 opacity-100' : 'bg-slate-200 translate-y-4 opacity-50 pointer-events-none'}`}>
+                            <div className={`p-3 rounded-xl shadow-md flex items-center justify-between transition-all duration-500 sticky top-16 z-30 ${hasGeneratedOnce ? 'bg-emerald-600 translate-y-0 opacity-100' : 'bg-slate-200 translate-y-2 opacity-50 pointer-events-none'}`}>
                                 <div className="text-white">
-                                    <h4 className="font-bold text-lg">النسخة النهائية</h4>
-                                    <p className="text-[11px] opacity-80">نسخ كافة الحقول بضغطة واحدة</p>
+                                    <h4 className="font-bold text-sm">النسخة النهائية</h4>
+                                    <p className="text-[10px] opacity-80">نسخ كافة الحقول</p>
                                 </div>
-                                <button disabled={!hasGeneratedOnce} onClick={copyAllResults} className={`px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-3 shadow-2xl ${globalCopyStatus ? 'bg-green-500 text-white' : 'bg-white text-emerald-600 hover:scale-105 active:scale-95'}`}>
+                                <button disabled={!hasGeneratedOnce} onClick={copyAllResults} className={`px-5 py-2 rounded-lg font-bold transition-all flex items-center gap-2 shadow-lg text-sm ${globalCopyStatus ? 'bg-green-500 text-white' : 'bg-white text-emerald-600 hover:scale-105 active:scale-95'}`}>
                                     {globalCopyStatus ? 'تم النسخ!' : 'نسخ الكل'}
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
                                 </button>
                             </div>
 
                             {/* Results - تظهر دائماً مع placeholder */}
-                            <div className="space-y-6">
+                            <div className="space-y-3">
                                 {/* التصنيفات المقترحة */}
                                 <ResultCard
                                     title={`التصنيفات المقترحة ${editableResult.suggestedCategories.length > 0 ? `(${editableResult.suggestedCategories.length})` : ''}`}
@@ -554,9 +554,9 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="text-center py-6 text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                                            <span className="text-2xl mb-2 block">🏷️</span>
-                                            <p className="text-sm">سيتم اقتراح التصنيفات المناسبة للمقال تلقائياً</p>
+                                        <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                            <span className="text-lg mb-1 block">🏷️</span>
+                                            <p className="text-xs">سيتم اقتراح التصنيفات المناسبة تلقائياً</p>
                                         </div>
                                     )}
                                 </ResultCard>
@@ -587,9 +587,9 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="text-center py-6 text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                                            <span className="text-2xl mb-2 block">✍️</span>
-                                            <p className="text-sm">سيتم توليد عناوين متنوعة وجذابة للمقال</p>
+                                        <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                            <span className="text-lg mb-1 block">✍️</span>
+                                            <p className="text-xs">سيتم توليد عناوين متنوعة وجذابة</p>
                                         </div>
                                     )}
                                 </ResultCard>
@@ -604,7 +604,7 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                         value={editableResult.keywords.join(', ')}
                                         onChange={(e) => setEditableResult({ ...editableResult, keywords: e.target.value.split(',').map(s => s.trim()).filter(s => s) })}
                                         placeholder="كلمة1, كلمة2, كلمة3..."
-                                        className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 outline-none focus:bg-white resize-none placeholder:text-slate-300"
+                                        className="w-full h-16 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 outline-none focus:bg-white resize-none placeholder:text-slate-300"
                                     />
                                 </ResultCard>
 
@@ -615,22 +615,22 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                     onCopy={() => copyToClipboard(editableResult.teasers.join('\n'))}
                                 >
                                     {editableResult.teasers.length > 0 ? (
-                                        <div className="space-y-4">
+                                        <div className="space-y-2">
                                             {editableResult.teasers.map((s, i) => (
-                                                <div key={i} className="flex flex-col gap-1">
+                                                <div key={i} className="flex flex-col gap-0.5">
                                                     {aiConfig.teaserPrompts[i] && (
-                                                        <div className="text-[10px] text-emerald-400 font-bold px-1 truncate">
-                                                            {i + 1}. نوع: {aiConfig.teaserPrompts[i]}
+                                                        <div className="text-[9px] text-emerald-400 font-bold px-1 truncate">
+                                                            {i + 1}. {aiConfig.teaserPrompts[i]}
                                                         </div>
                                                     )}
-                                                    <textarea value={s} onChange={(e) => updateListItem('teasers', i, e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-3 rounded-xl text-sm text-slate-600 h-20 resize-none outline-none focus:bg-white focus:border-emerald-200" />
+                                                    <textarea value={s} onChange={(e) => updateListItem('teasers', i, e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg text-xs text-slate-600 h-14 resize-none outline-none focus:bg-white focus:border-emerald-200" />
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="text-center py-6 text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                                            <span className="text-2xl mb-2 block">💬</span>
-                                            <p className="text-sm">سيتم توليد نصوص تشويقية قصيرة لجذب القراء</p>
+                                        <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                            <span className="text-lg mb-1 block">💬</span>
+                                            <p className="text-xs">سيتم توليد نصوص تشويقية قصيرة</p>
                                         </div>
                                     )}
                                 </ResultCard>
@@ -642,24 +642,24 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                     onCopy={() => copyToClipboard(editableResult.linkingSuggestions.map(s => `${s.title}: ${s.url}`).join('\n'))}
                                 >
                                     {editableResult.linkingSuggestions.length > 0 ? (
-                                        <div className="space-y-4">
+                                        <div className="space-y-2">
                                             {editableResult.linkingSuggestions.map((s, i) => (
-                                                <div key={i} className="bg-emerald-50/20 border border-emerald-100 p-4 rounded-2xl space-y-2">
-                                                    <div className="flex gap-2 items-center">
-                                                        <span className="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-1 rounded-md font-bold">عنوان</span>
-                                                        <input value={s.title} onChange={(e) => updateLinkingItem(i, 'title', e.target.value)} className="flex-1 bg-white border border-slate-100 p-2 rounded-xl text-sm text-slate-700 outline-none" />
+                                                <div key={i} className="bg-emerald-50/20 border border-emerald-100 p-2 rounded-lg space-y-1">
+                                                    <div className="flex gap-1.5 items-center">
+                                                        <span className="text-[9px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded font-bold">عنوان</span>
+                                                        <input value={s.title} onChange={(e) => updateLinkingItem(i, 'title', e.target.value)} className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg text-xs text-slate-700 outline-none" />
                                                     </div>
-                                                    <div className="flex gap-2 items-center">
-                                                        <span className="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-1 rounded-md font-bold">رابط</span>
-                                                        <input value={s.url} onChange={(e) => updateLinkingItem(i, 'url', e.target.value)} className="flex-1 bg-white border border-slate-100 p-2 rounded-xl text-xs font-mono text-emerald-500 outline-none" />
+                                                    <div className="flex gap-1.5 items-center">
+                                                        <span className="text-[9px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded font-bold">رابط</span>
+                                                        <input value={s.url} onChange={(e) => updateLinkingItem(i, 'url', e.target.value)} className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg text-[10px] font-mono text-emerald-500 outline-none" />
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="text-center py-6 text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                                            <span className="text-2xl mb-2 block">🔗</span>
-                                            <p className="text-sm">سيتم اقتراح مقالات من مكتبتك للربط الداخلي</p>
+                                        <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                            <span className="text-lg mb-1 block">🔗</span>
+                                            <p className="text-xs">سيتم اقتراح مقالات للربط الداخلي</p>
                                         </div>
                                     )}
                                 </ResultCard>
@@ -671,18 +671,18 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                     onCopy={() => copyToClipboard(editableResult.sources.join('\n'))}
                                 >
                                     {editableResult.sources.length > 0 ? (
-                                        <div className="space-y-3">
+                                        <div className="space-y-2">
                                             {editableResult.sources.map((s, i) => (
-                                                <div key={i} className="flex gap-2">
-                                                    <span className="text-[10px] bg-slate-100 px-2 py-3 rounded-lg text-slate-400 font-bold">{i + 1}</span>
-                                                    <textarea value={s} onChange={(e) => updateListItem('sources', i, e.target.value)} className="flex-1 bg-slate-50 border border-slate-100 p-3 rounded-xl text-sm text-slate-700 h-20 resize-none outline-none focus:bg-white focus:border-emerald-300" />
+                                                <div key={i} className="flex gap-1.5">
+                                                    <span className="text-[9px] bg-slate-100 px-1.5 py-2 rounded text-slate-400 font-bold">{i + 1}</span>
+                                                    <textarea value={s} onChange={(e) => updateListItem('sources', i, e.target.value)} className="flex-1 bg-slate-50 border border-slate-100 p-2 rounded-lg text-xs text-slate-700 h-14 resize-none outline-none focus:bg-white focus:border-emerald-300" />
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="text-center py-6 text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                                            <span className="text-2xl mb-2 block">📚</span>
-                                            <p className="text-sm">سيتم توليد مصادر بتنسيق APA 8 للاستشهاد</p>
+                                        <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                            <span className="text-lg mb-1 block">📚</span>
+                                            <p className="text-xs">سيتم توليد مصادر بتنسيق APA 8</p>
                                         </div>
                                     )}
                                 </ResultCard>
