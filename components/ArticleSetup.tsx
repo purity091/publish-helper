@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import * as db from '../services/supabaseService';
+import { FileText, CheckCircle, Rocket, ClipboardList, Sparkles, FileIcon, Newspaper, BookOpen, Check } from 'lucide-react';
 
 interface ArticleSetupProps {
   onStart: (topic: string) => void;
@@ -58,7 +59,7 @@ export const ArticleSetup: React.FC<ArticleSetupProps> = ({ onStart, isLoading }
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'published':
-        return <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">منشور ✓</span>;
+        return <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold inline-flex items-center gap-1"><Check className="w-3 h-3" /> منشور</span>;
       case 'ready':
         return <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">جاهز للنشر</span>;
       default:
@@ -89,7 +90,7 @@ export const ArticleSetup: React.FC<ArticleSetupProps> = ({ onStart, isLoading }
         <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-5 text-white">
           <div className="flex items-center justify-between mb-3">
             <span className="text-indigo-100 text-sm">إجمالي المحتوى</span>
-            <span className="text-2xl">📝</span>
+            <FileText className="w-6 h-6 text-indigo-100" />
           </div>
           <p className="text-3xl font-bold">{savedArticles.length}</p>
         </div>
@@ -97,7 +98,7 @@ export const ArticleSetup: React.FC<ArticleSetupProps> = ({ onStart, isLoading }
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 text-white">
           <div className="flex items-center justify-between mb-3">
             <span className="text-emerald-100 text-sm">منشور</span>
-            <span className="text-2xl">✅</span>
+            <CheckCircle className="w-6 h-6 text-emerald-100" />
           </div>
           <p className="text-3xl font-bold">{savedArticles.filter(a => a.status === 'published').length}</p>
         </div>
@@ -105,7 +106,7 @@ export const ArticleSetup: React.FC<ArticleSetupProps> = ({ onStart, isLoading }
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-5 text-white">
           <div className="flex items-center justify-between mb-3">
             <span className="text-blue-100 text-sm">جاهز للنشر</span>
-            <span className="text-2xl">🚀</span>
+            <Rocket className="w-6 h-6 text-blue-100" />
           </div>
           <p className="text-3xl font-bold">{savedArticles.filter(a => a.status === 'ready').length}</p>
         </div>
@@ -113,7 +114,7 @@ export const ArticleSetup: React.FC<ArticleSetupProps> = ({ onStart, isLoading }
         <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-5 text-white">
           <div className="flex items-center justify-between mb-3">
             <span className="text-amber-100 text-sm">مسودات</span>
-            <span className="text-2xl">📋</span>
+            <ClipboardList className="w-6 h-6 text-amber-100" />
           </div>
           <p className="text-3xl font-bold">{savedArticles.filter(a => a.status === 'draft').length}</p>
         </div>
@@ -133,7 +134,7 @@ export const ArticleSetup: React.FC<ArticleSetupProps> = ({ onStart, isLoading }
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-8 shadow-lg">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-800">✨ إنشاء محتوى جديد</h2>
+            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Sparkles className="w-5 h-5 text-indigo-500" /> إنشاء محتوى جديد</h2>
             <button
               onClick={() => setShowNewForm(false)}
               className="text-slate-400 hover:text-slate-600"
@@ -149,11 +150,11 @@ export const ArticleSetup: React.FC<ArticleSetupProps> = ({ onStart, isLoading }
             <button
               onClick={() => setContentType('article')}
               className={`flex-1 py-4 px-6 rounded-xl border-2 transition-all flex items-center justify-center gap-3 ${contentType === 'article'
-                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                : 'border-slate-200 hover:border-slate-300 text-slate-600'
                 }`}
             >
-              <span className="text-2xl">📄</span>
+              <FileIcon className="w-6 h-6 text-current" />
               <div className="text-right">
                 <p className="font-bold">مقال</p>
                 <p className="text-xs opacity-70">محتوى تفصيلي ومعمق</p>
@@ -163,11 +164,11 @@ export const ArticleSetup: React.FC<ArticleSetupProps> = ({ onStart, isLoading }
             <button
               onClick={() => setContentType('news')}
               className={`flex-1 py-4 px-6 rounded-xl border-2 transition-all flex items-center justify-center gap-3 ${contentType === 'news'
-                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                : 'border-slate-200 hover:border-slate-300 text-slate-600'
                 }`}
             >
-              <span className="text-2xl">📰</span>
+              <Newspaper className="w-6 h-6 text-current" />
               <div className="text-right">
                 <p className="font-bold">خبر</p>
                 <p className="text-xs opacity-70">تغطية سريعة للأحداث</p>
@@ -207,8 +208,8 @@ export const ArticleSetup: React.FC<ArticleSetupProps> = ({ onStart, isLoading }
                 type="submit"
                 disabled={isLoading || !topic.trim()}
                 className={`flex-1 py-3 rounded-xl font-bold text-white transition-all shadow-lg ${isLoading || !topic.trim()
-                    ? 'bg-indigo-300 cursor-not-allowed'
-                    : 'bg-indigo-600 hover:bg-indigo-700'
+                  ? 'bg-indigo-300 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
                   }`}
               >
                 {isLoading ? (
@@ -231,7 +232,7 @@ export const ArticleSetup: React.FC<ArticleSetupProps> = ({ onStart, isLoading }
       {/* Saved Articles List */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">📚 المحتوى السابق</h2>
+          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><BookOpen className="w-5 h-5 text-slate-600" /> المحتوى السابق</h2>
           <button
             onClick={loadSavedArticles}
             className="text-slate-400 hover:text-indigo-600 transition-colors"
@@ -254,7 +255,7 @@ export const ArticleSetup: React.FC<ArticleSetupProps> = ({ onStart, isLoading }
         ) : savedArticles.length === 0 ? (
           <div className="p-12 text-center">
             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">📝</span>
+              <FileText className="w-8 h-8 text-slate-400" />
             </div>
             <p className="text-slate-500 font-medium">لا يوجد محتوى بعد</p>
             <p className="text-slate-400 text-sm mt-1">ابدأ بإنشاء أول مقال أو خبر</p>
@@ -268,10 +269,10 @@ export const ArticleSetup: React.FC<ArticleSetupProps> = ({ onStart, isLoading }
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${article.topic.startsWith('[خبر]')
-                      ? 'bg-amber-100'
-                      : 'bg-indigo-100'
+                    ? 'bg-amber-100'
+                    : 'bg-indigo-100'
                     }`}>
-                    {article.topic.startsWith('[خبر]') ? '📰' : '📄'}
+                    {article.topic.startsWith('[خبر]') ? <Newspaper className="w-5 h-5" /> : <FileIcon className="w-5 h-5" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-slate-800 truncate">

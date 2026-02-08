@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import * as auth from '../services/authService';
+import { AlertTriangle } from 'lucide-react';
 
 interface AuthPageProps {
     onSuccess: () => void;
@@ -85,7 +86,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                         {/* Error Message */}
                         {error && (
                             <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-red-300 text-sm">
-                                ⚠️ {error}
+                                <AlertTriangle className="w-4 h-4 inline-block ml-2" /> {error}
                             </div>
                         )}
 

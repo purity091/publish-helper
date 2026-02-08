@@ -81,7 +81,7 @@ export const signIn = async (email: string, password: string): Promise<{ success
         return { success: false, error: error.message };
     }
 
-    // ✅ العمليات الثانوية تُنفذ في الخلفية بدون انتظار (لا تؤخر تسجيل الدخول)
+    // العمليات الثانوية تُنفذ في الخلفية بدون انتظار (لا تؤخر تسجيل الدخول)
     if (data.user) {
         const userId = data.user.id;
 

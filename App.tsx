@@ -12,6 +12,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { generateTableOfContents, generateSectionContent } from './services/openaiService';
 import * as db from './services/supabaseService';
 import * as auth from './services/authService';
+import { ListChecks, Brain, PenLine, Eye, Rocket, Crown, CheckCircle } from 'lucide-react';
 
 const App: React.FC = () => {
   // Auth State
@@ -109,7 +110,7 @@ const App: React.FC = () => {
           setStep(AppStep.OUTLINE);
         }
 
-        alert('✅ تم استرجاع مقال محفوظ مسبقاً! لن يتم استهلاك API إضافي.');
+        alert('تم استرجاع مقال محفوظ مسبقاً! لن يتم استهلاك API إضافي.');
         return;
       }
 
@@ -250,11 +251,11 @@ const App: React.FC = () => {
           {step !== AppStep.SETUP && (
             <div className="flex items-center gap-4 md:gap-8">
               {[
-                { s: AppStep.OUTLINE, label: 'الهيكل', icon: '📋' },
-                { s: AppStep.KNOWLEDGE_BASE, label: 'المعرفة', icon: '🧠' },
-                { s: AppStep.WRITING, label: 'المسودة', icon: '✍️' },
-                { s: AppStep.PREVIEW, label: 'المعاينة', icon: '👁️' },
-                { s: AppStep.PUBLISH_READY, label: 'النشر', icon: '🚀' }
+                { s: AppStep.OUTLINE, label: 'الهيكل', icon: <ListChecks className="w-4 h-4" /> },
+                { s: AppStep.KNOWLEDGE_BASE, label: 'المعرفة', icon: <Brain className="w-4 h-4" /> },
+                { s: AppStep.WRITING, label: 'المسودة', icon: <PenLine className="w-4 h-4" /> },
+                { s: AppStep.PREVIEW, label: 'المعاينة', icon: <Eye className="w-4 h-4" /> },
+                { s: AppStep.PUBLISH_READY, label: 'النشر', icon: <Rocket className="w-4 h-4" /> }
               ].map((item, idx) => (
                 <button
                   key={idx}
@@ -279,7 +280,7 @@ const App: React.FC = () => {
                     className="px-3 py-2 bg-purple-100 text-purple-700 rounded-xl text-sm font-bold hover:bg-purple-200 transition-all flex items-center gap-2"
                     title="لوحة التحكم"
                   >
-                    <span>👑</span>
+                    <Crown className="w-4 h-4" />
                     <span className="hidden md:inline">الإدارة</span>
                   </button>
                 )}

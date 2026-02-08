@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import * as auth from '../services/authService';
+import { Crown, Users, CircleDot, FileText, BarChart3, ClipboardList, RefreshCw, Pencil, Lock, Unlock, ChartBar, ChevronRight, X, KeyRound, LogOut, Bot, Palette, FolderPlus } from 'lucide-react';
 
 interface AdminDashboardProps {
     onBack: () => void;
@@ -61,18 +62,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
     };
 
     const getActionLabel = (action: string) => {
-        const labels: Record<string, string> = {
-            'login': '🔑 تسجيل دخول',
-            'logout': '🚪 تسجيل خروج',
-            'article_created': '📝 إنشاء مقال',
-            'article_updated': '✏️ تحديث مقال',
-            'article_published': '🚀 نشر مقال',
-            'section_generated': '🤖 توليد قسم',
-            'metadata_generated': '📊 توليد بيانات',
-            'method_created': '🎨 إنشاء أسلوب',
-            'category_added': '📁 إضافة تصنيف'
+        const labels: Record<string, { icon: React.ReactNode; text: string }> = {
+            'login': { icon: <KeyRound className="w-3.5 h-3.5" />, text: 'تسجيل دخول' },
+            'logout': { icon: <LogOut className="w-3.5 h-3.5" />, text: 'تسجيل خروج' },
+            'article_created': { icon: <FileText className="w-3.5 h-3.5" />, text: 'إنشاء مقال' },
+            'article_updated': { icon: <Pencil className="w-3.5 h-3.5" />, text: 'تحديث مقال' },
+            'article_published': { icon: <ChevronRight className="w-3.5 h-3.5" />, text: 'نشر مقال' },
+            'section_generated': { icon: <Bot className="w-3.5 h-3.5" />, text: 'توليد قسم' },
+            'metadata_generated': { icon: <BarChart3 className="w-3.5 h-3.5" />, text: 'توليد بيانات' },
+            'method_created': { icon: <Palette className="w-3.5 h-3.5" />, text: 'إنشاء أسلوب' },
+            'category_added': { icon: <FolderPlus className="w-3.5 h-3.5" />, text: 'إضافة تصنيف' }
         };
-        return labels[action] || action;
+        const labelData = labels[action];
+        if (!labelData) return <span>{action}</span>;
+        return <span className="flex items-center gap-1.5">{labelData.icon} {labelData.text}</span>;
     };
 
     if (currentUser.role !== 'superadmin') {
@@ -111,7 +114,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
                         <div>
                             <h1 className="text-xl font-bold text-white flex items-center gap-2">
                                 <span className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
-                                    👑
+                                    <Crown className="w-4 h-4 text-white" />
                                 </span>
                                 لوحة تحكم المدير
                             </h1>
@@ -137,7 +140,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
                     <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white">
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-emerald-100">إجمالي المحررين</span>
-                            <span className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">👥</span>
+                            <span className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><Users className="w-5 h-5" /></span>
                         </div>
                         <p className="text-4xl font-bold">{editors.length}</p>
                     </div>
@@ -145,7 +148,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
                     <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-blue-100">النشطون الآن</span>
-                            <span className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">🟢</span>
+                            <span className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><CircleDot className="w-5 h-5" /></span>
                         </div>
                         <p className="text-4xl font-bold">
                             {editors.filter(e => e.is_active && e.last_login_at &&
@@ -157,7 +160,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
                     <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white">
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-purple-100">مقالات اليوم</span>
-                            <span className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">📝</span>
+                            <span className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><FileText className="w-5 h-5" /></span>
                         </div>
                         <p className="text-4xl font-bold">
                             {editors.reduce((sum, e) => sum + (e.stats?.articles_today || 0), 0)}
@@ -167,7 +170,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
                     <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white">
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-amber-100">مقالات الشهر</span>
-                            <span className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">📊</span>
+                            <span className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><BarChart3 className="w-5 h-5" /></span>
                         </div>
                         <p className="text-4xl font-bold">
                             {editors.reduce((sum, e) => sum + (e.stats?.articles_this_month || 0), 0)}
@@ -180,26 +183,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
                     <button
                         onClick={() => setView('editors')}
                         className={`px-6 py-3 rounded-xl font-bold transition-all ${view === 'editors'
-                                ? 'bg-white text-slate-900 shadow-lg'
-                                : 'bg-white/10 text-white hover:bg-white/20'
+                            ? 'bg-white text-slate-900 shadow-lg'
+                            : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                     >
-                        👥 المحررون ({editors.length})
+                        <Users className="w-4 h-4" /> المحررون ({editors.length})
                     </button>
                     <button
                         onClick={() => setView('activities')}
                         className={`px-6 py-3 rounded-xl font-bold transition-all ${view === 'activities'
-                                ? 'bg-white text-slate-900 shadow-lg'
-                                : 'bg-white/10 text-white hover:bg-white/20'
+                            ? 'bg-white text-slate-900 shadow-lg'
+                            : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                     >
-                        📋 سجل النشاط ({activities.length})
+                        <ClipboardList className="w-4 h-4" /> سجل النشاط ({activities.length})
                     </button>
                     <button
                         onClick={loadData}
                         className="px-4 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all"
                     >
-                        🔄 تحديث
+                        <RefreshCw className="w-4 h-4" /> تحديث
                     </button>
                 </div>
 
@@ -242,10 +245,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${editor.role === 'superadmin'
-                                                    ? 'bg-purple-500/20 text-purple-300'
-                                                    : 'bg-emerald-500/20 text-emerald-300'
+                                                ? 'bg-purple-500/20 text-purple-300'
+                                                : 'bg-emerald-500/20 text-emerald-300'
                                                 }`}>
-                                                {editor.role === 'superadmin' ? '👑 مدير' : '✏️ محرر'}
+                                                {editor.role === 'superadmin' ? <><Crown className="w-3 h-3" /> مدير</> : <><Pencil className="w-3 h-3" /> محرر</>}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-slate-300 text-sm">
@@ -262,10 +265,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${editor.is_active
-                                                    ? 'bg-emerald-500/20 text-emerald-300'
-                                                    : 'bg-red-500/20 text-red-300'
+                                                ? 'bg-emerald-500/20 text-emerald-300'
+                                                : 'bg-red-500/20 text-red-300'
                                                 }`}>
-                                                {editor.is_active ? '🟢 نشط' : '🔴 معطل'}
+                                                {editor.is_active ? <><CircleDot className="w-3 h-3 text-emerald-400" /> نشط</> : <><CircleDot className="w-3 h-3 text-red-400" /> معطل</>}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -275,17 +278,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
                                                     className="p-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all"
                                                     title="عرض الجلسات"
                                                 >
-                                                    📊
+                                                    <ChartBar className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleToggleActive(editor.id, editor.is_active)}
                                                     className={`p-2 rounded-lg transition-all ${editor.is_active
-                                                            ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
-                                                            : 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
+                                                        ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
+                                                        : 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
                                                         }`}
                                                     title={editor.is_active ? 'تعطيل' : 'تفعيل'}
                                                 >
-                                                    {editor.is_active ? '🔒' : '🔓'}
+                                                    {editor.is_active ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                                                 </button>
                                                 {editor.id !== currentUser.id && (
                                                     <button
@@ -293,7 +296,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
                                                         className="p-2 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-all"
                                                         title="تغيير الدور"
                                                     >
-                                                        👑
+                                                        <Crown className="w-4 h-4" />
                                                     </button>
                                                 )}
                                             </div>
@@ -339,12 +342,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                         <div className="bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
                             <div className="flex items-center justify-between p-6 border-b border-white/10">
-                                <h3 className="text-xl font-bold text-white">📊 سجل الجلسات</h3>
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2"><ChartBar className="w-5 h-5" /> سجل الجلسات</h3>
                                 <button
                                     onClick={() => setSelectedEditor(null)}
                                     className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white hover:bg-white/20"
                                 >
-                                    ✕
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
                             <div className="p-6 max-h-[60vh] overflow-y-auto">
@@ -362,7 +365,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, currentU
                                                         {formatDate(session.started_at)}
                                                     </p>
                                                     <p className="text-slate-400 text-sm">
-                                                        {session.ended_at ? `انتهت: ${formatDate(session.ended_at)}` : '🟢 جارية حالياً'}
+                                                        {session.ended_at ? `انتهت: ${formatDate(session.ended_at)}` : <span className="flex items-center gap-1"><CircleDot className="w-3 h-3 text-emerald-400" /> جارية حالياً</span>}
                                                     </p>
                                                 </div>
                                                 <div className="text-left">

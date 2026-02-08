@@ -4,6 +4,7 @@ import { ArticleSection, PublishMetadata, AIConfig, LinkingSuggestion } from '..
 import { generatePublishMetadata } from '../services/publishMetadataService';
 import * as db from '../services/supabaseService';
 import ResultCard from './ResultCard';
+import { Tag, PenLine, MessageSquare, Link2, BookOpen, AlertTriangle, CheckCircle, PartyPopper } from 'lucide-react';
 
 interface PublishReadyEditorProps {
     topic: string;
@@ -188,13 +189,13 @@ export const PublishReadyEditor: React.FC<PublishReadyEditorProps> = ({ topic, s
 
     const handleDeleteAll = async () => {
         if (articles.length === 0) return;
-        if (window.confirm('⚠️ تحذير: هل أنت متأكد من حذف "جميع" المقالات نهائياً؟')) {
+        if (window.confirm('تحذير: هل أنت متأكد من حذف "جميع" المقالات نهائياً؟')) {
             setIsSyncing(true);
             try {
                 await db.deleteAllArticles();
                 setArticles([]);
                 setSearchQuery('');
-                alert('✅ تم إفراغ قاعدة البيانات.');
+                alert('تم إفراغ قاعدة البيانات.');
             } finally {
                 setIsSyncing(false);
             }
@@ -235,7 +236,7 @@ export const PublishReadyEditor: React.FC<PublishReadyEditorProps> = ({ topic, s
                 try {
                     const count = await db.importArticles(newBatch);
                     await loadData();
-                    alert(`🎉 تم استيراد ${count} مقال.`);
+                    alert(`تم استيراد ${count} مقال.`);
                 } finally {
                     setIsSyncing(false);
                 }
@@ -278,7 +279,7 @@ export const PublishReadyEditor: React.FC<PublishReadyEditorProps> = ({ topic, s
 
     const handleDeleteAllCategories = async () => {
         if (categories.length === 0) return;
-        if (window.confirm('⚠️ تحذير: هل أنت متأكد من حذف "جميع" التصنيفات؟')) {
+        if (window.confirm('تحذير: هل أنت متأكد من حذف "جميع" التصنيفات؟')) {
             setIsSyncing(true);
             try {
                 await db.deleteAllCategories();
@@ -309,7 +310,7 @@ export const PublishReadyEditor: React.FC<PublishReadyEditorProps> = ({ topic, s
                 try {
                     const count = await db.importCategories(newCats);
                     await loadData();
-                    alert(`🎉 تم استيراد ${count} تصنيف.`);
+                    alert(`تم استيراد ${count} تصنيف.`);
                 } finally {
                     setIsSyncing(false);
                 }
@@ -555,7 +556,7 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                         </div>
                                     ) : (
                                         <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                                            <span className="text-lg mb-1 block">🏷️</span>
+                                            <Tag className="w-5 h-5 mx-auto mb-1" />
                                             <p className="text-xs">سيتم اقتراح التصنيفات المناسبة تلقائياً</p>
                                         </div>
                                     )}
@@ -588,7 +589,7 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                         </div>
                                     ) : (
                                         <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                                            <span className="text-lg mb-1 block">✍️</span>
+                                            <PenLine className="w-5 h-5 mx-auto mb-1" />
                                             <p className="text-xs">سيتم توليد عناوين متنوعة وجذابة</p>
                                         </div>
                                     )}
@@ -629,7 +630,7 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                         </div>
                                     ) : (
                                         <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                                            <span className="text-lg mb-1 block">💬</span>
+                                            <MessageSquare className="w-5 h-5 mx-auto mb-1" />
                                             <p className="text-xs">سيتم توليد نصوص تشويقية قصيرة</p>
                                         </div>
                                     )}
@@ -658,7 +659,7 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                         </div>
                                     ) : (
                                         <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                                            <span className="text-lg mb-1 block">🔗</span>
+                                            <Link2 className="w-5 h-5 mx-auto mb-1" />
                                             <p className="text-xs">سيتم اقتراح مقالات للربط الداخلي</p>
                                         </div>
                                     )}
@@ -681,7 +682,7 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                         </div>
                                     ) : (
                                         <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                                            <span className="text-lg mb-1 block">📚</span>
+                                            <BookOpen className="w-5 h-5 mx-auto mb-1" />
                                             <p className="text-xs">سيتم توليد مصادر بتنسيق APA 8</p>
                                         </div>
                                     )}
