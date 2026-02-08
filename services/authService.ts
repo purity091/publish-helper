@@ -81,33 +81,86 @@ export const signIn = async (email: string, password: string): Promise<{ success
         return { success: false, error: error.message };
     }
 
-    // محاولة تحديث وقت آخر تسجيل دخول (تجاهل الأخطاء)
+    // ✅ العمليات الثانوية تُنفذ في الخلفية بدون انتظار (لا تؤخر تسجيل الدخول)
     if (data.user) {
-        try {
-            await supabase
-                .from('user_profiles')
-                .update({ last_login_at: new Date().toISOString() })
-                .eq('id', data.user.id);
-        } catch (e) {
-            console.warn('Could not update last_login_at:', e);
-        }
+        const userId = data.user.id;
 
-        // محاولة تسجيل النشاط (تجاهل الأخطاء)
-        try {
-            await logActivity('login');
-        } catch (e) {
-            console.warn('Could not log activity:', e);
-        }
+        // تنفيذ جميع العمليات في الخلفية بالتوازي
+        (async () => {
+            try {
+                await Promise.all([
+                    // تحديث وقت آخر تسجيل دخول
+                    (async () => {
+                        try {
+                            await supabase
+                                .from('user_profiles')
+                                .update({ last_login_at: new Date().toISOString() })
+                                .eq('id', userId);
+                        } catch (e) {
+                            console.warn('Could not update last_login_at:', e);
+                        }
+                    })(),
 
-        // محاولة بدء جلسة جديدة (تجاهل الأخطاء)
-        try {
-            await startSession();
-        } catch (e) {
-            console.warn('Could not start session:', e);
-        }
+                    // تسجيل النشاط (نسخة مبسطة بدون استدعاء getUser مرة أخرى)
+                    (async () => {
+                        try {
+                            await supabase
+                                .from('activity_logs')
+                                .insert({
+                                    user_id: userId,
+                                    action_type: 'login',
+                                    metadata: {}
+                                });
+                        } catch (e) {
+                            console.warn('Could not log activity:', e);
+                        }
+                    })(),
+
+                    // بدء جلسة جديدة (نسخة مبسطة)
+                    startSessionFast(userId)
+                ]);
+            } catch {
+                // تجاهل أي أخطاء في العمليات الخلفية
+            }
+        })();
     }
 
     return { success: true };
+};
+
+// نسخة سريعة من startSession تستخدم userId مباشرة بدون استدعاء getUser
+const startSessionFast = async (userId: string): Promise<void> => {
+    if (!supabase) return;
+
+    try {
+        // إنهاء الجلسات السابقة وبدء جلسة جديدة بالتوازي
+        const [, sessionResult] = await Promise.all([
+            supabase
+                .from('user_sessions')
+                .update({
+                    is_active: false,
+                    ended_at: new Date().toISOString()
+                })
+                .eq('user_id', userId)
+                .eq('is_active', true),
+
+            supabase
+                .from('user_sessions')
+                .insert({
+                    user_id: userId,
+                    started_at: new Date().toISOString(),
+                    is_active: true
+                })
+                .select('id')
+                .single()
+        ]);
+
+        if (sessionResult.data) {
+            currentSessionId = sessionResult.data.id;
+        }
+    } catch (e) {
+        console.warn('Could not start session:', e);
+    }
 };
 
 export const signOut = async (): Promise<void> => {
@@ -130,16 +183,31 @@ export const signOut = async (): Promise<void> => {
     // مسح cache الدور
     clearRoleCache();
 
+    // مسح cache المستخدم
+    cachedUserProfile = null;
+
     await supabase.auth.signOut();
 };
 
-export const getCurrentUser = async (): Promise<UserProfile | null> => {
+// Cache للـ user profile (صالح لمدة 30 ثانية)
+let cachedUserProfile: { profile: UserProfile | null; timestamp: number } | null = null;
+const USER_CACHE_DURATION = 30000; // 30 ثانية
+
+export const getCurrentUser = async (forceRefresh = false): Promise<UserProfile | null> => {
     if (!supabase) return null;
+
+    // استخدام الـ cache إذا كان صالحاً
+    if (!forceRefresh && cachedUserProfile && Date.now() - cachedUserProfile.timestamp < USER_CACHE_DURATION) {
+        return cachedUserProfile.profile;
+    }
 
     try {
         const { data: { user } } = await supabase.auth.getUser();
 
-        if (!user) return null;
+        if (!user) {
+            cachedUserProfile = { profile: null, timestamp: Date.now() };
+            return null;
+        }
 
         const { data: profile, error } = await supabase
             .from('user_profiles')
@@ -150,7 +218,7 @@ export const getCurrentUser = async (): Promise<UserProfile | null> => {
         // إذا لم يوجد profile، أنشئ واحد افتراضي من بيانات auth
         if (error || !profile) {
             console.warn('No profile found, using auth data');
-            return {
+            const fallbackProfile: UserProfile = {
                 id: user.id,
                 email: user.email || '',
                 full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'مستخدم',
@@ -160,13 +228,21 @@ export const getCurrentUser = async (): Promise<UserProfile | null> => {
                 last_login_at: new Date().toISOString(),
                 created_at: user.created_at || new Date().toISOString()
             };
+            cachedUserProfile = { profile: fallbackProfile, timestamp: Date.now() };
+            return fallbackProfile;
         }
 
+        cachedUserProfile = { profile, timestamp: Date.now() };
         return profile;
     } catch (error) {
         console.error('getCurrentUser error:', error);
         return null;
     }
+};
+
+// مسح cache المستخدم عند تسجيل الخروج
+export const clearUserCache = () => {
+    cachedUserProfile = null;
 };
 
 export const updateProfile = async (updates: Partial<UserProfile>): Promise<boolean> => {
