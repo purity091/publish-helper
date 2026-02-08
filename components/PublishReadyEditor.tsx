@@ -42,14 +42,20 @@ const CONFIG_KEY = 'ai_config_settings_v2';
 
 type ViewMode = 'editor' | 'articles' | 'categories' | 'settings';
 
+// Cache للبيانات المحملة - يتم تحميلها مرة واحدة فقط
+let cachedArticles: db.PublishedArticle[] | null = null;
+let cachedCategories: db.Category[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 60000; // 1 دقيقة
+
 export const PublishReadyEditor: React.FC<PublishReadyEditorProps> = ({ topic, sections, onBack }) => {
     const [view, setView] = useState<ViewMode>('editor');
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false); // لا نبدأ بـ true
     const [isSyncing, setIsSyncing] = useState(false);
 
-    // حالة المقالات والتصنيفات
-    const [articles, setArticles] = useState<db.PublishedArticle[]>([]);
-    const [categories, setCategories] = useState<db.Category[]>([]);
+    // حالة المقالات والتصنيفات - تبدأ من الـ cache إن وجد
+    const [articles, setArticles] = useState<db.PublishedArticle[]>(cachedArticles || []);
+    const [categories, setCategories] = useState<db.Category[]>(cachedCategories || []);
 
     const [aiConfig, setAiConfig] = useState<AIConfig>(() => {
         try {
@@ -79,27 +85,49 @@ export const PublishReadyEditor: React.FC<PublishReadyEditorProps> = ({ topic, s
     const fileInputRef = useRef<HTMLInputElement>(null);
     const categoryFileInputRef = useRef<HTMLInputElement>(null);
 
-    // تحميل البيانات من Supabase
-    const loadData = useCallback(async () => {
-        setIsLoading(true);
+    // Flag لتتبع إذا تم تغيير الإعدادات يدوياً
+    const configChangedRef = useRef(false);
+    const initialLoadDoneRef = useRef(false);
+
+    // تحميل البيانات من Supabase في الخلفية
+    const loadData = useCallback(async (forceRefresh = false) => {
+        const now = Date.now();
+        const cacheValid = cachedArticles !== null && cachedCategories !== null && (now - cacheTimestamp) < CACHE_DURATION;
+
+        // إذا كان الـ cache صالح ولا نريد تحديث إجباري
+        if (cacheValid && !forceRefresh) {
+            setArticles(cachedArticles!);
+            setCategories(cachedCategories!);
+            return;
+        }
+
+        // تحميل في الخلفية بدون إظهار شاشة التحميل
         try {
             const [articlesData, categoriesData, aiConfigData] = await Promise.all([
                 db.fetchArticles(),
                 db.fetchCategories(),
                 db.getAIConfig()
             ]);
+
+            // تحديث الـ cache
+            cachedArticles = articlesData;
+            cachedCategories = categoriesData;
+            cacheTimestamp = Date.now();
+
             setArticles(articlesData);
             setCategories(categoriesData);
-            if (aiConfigData && aiConfigData.teaserPrompts) {
+
+            // تحديث الإعدادات فقط في التحميل الأول
+            if (!initialLoadDoneRef.current && aiConfigData && aiConfigData.teaserPrompts) {
                 setAiConfig(aiConfigData);
             }
+            initialLoadDoneRef.current = true;
         } catch (e) {
             console.error('Error loading data:', e);
-        } finally {
-            setIsLoading(false);
         }
     }, []);
 
+    // تحميل البيانات عند فتح المكون (في الخلفية)
     useEffect(() => {
         loadData();
     }, [loadData]);
@@ -109,13 +137,22 @@ export const PublishReadyEditor: React.FC<PublishReadyEditorProps> = ({ topic, s
         return sections.map(s => `## ${s.title}\n\n${s.content}`).join('\n\n');
     }, [sections]);
 
-    // حفظ إعدادات AI في قاعدة البيانات
+    // حفظ إعدادات AI فقط عند التغيير اليدوي (ليس عند التحميل)
     useEffect(() => {
-        const saveConfig = async () => {
-            localStorage.setItem(CONFIG_KEY, JSON.stringify(aiConfig));
+        // تجاهل التحديث الأول من قاعدة البيانات
+        if (!configChangedRef.current) {
+            return;
+        }
+
+        // حفظ في localStorage فوراً
+        localStorage.setItem(CONFIG_KEY, JSON.stringify(aiConfig));
+
+        // حفظ في قاعدة البيانات بتأخير (debounce)
+        const timer = setTimeout(async () => {
             await db.saveAIConfig(aiConfig);
-        };
-        saveConfig();
+        }, 1000);
+
+        return () => clearTimeout(timer);
     }, [aiConfig]);
 
     // --- Helpers ---
@@ -312,9 +349,16 @@ export const PublishReadyEditor: React.FC<PublishReadyEditorProps> = ({ topic, s
     };
 
     const handleTeaserPromptChange = (index: number, value: string) => {
+        configChangedRef.current = true;
         const newPrompts = [...aiConfig.teaserPrompts];
         newPrompts[index] = value;
         setAiConfig(prev => ({ ...prev, teaserPrompts: newPrompts }));
+    };
+
+    // دالة مساعدة لتحديث الإعدادات مع تفعيل flag التغيير
+    const updateAiConfig = (updates: Partial<AIConfig>) => {
+        configChangedRef.current = true;
+        setAiConfig(prev => ({ ...prev, ...updates }));
     };
 
     const copyToClipboard = (text: string) => {
@@ -723,7 +767,7 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                     <span className="w-2 h-6 bg-emerald-600 rounded-full"></span>
                                     التعليمات العامة (System Instruction)
                                 </h3>
-                                <textarea className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white transition-all outline-none text-sm text-slate-600" value={aiConfig.systemInstruction} onChange={(e) => setAiConfig(prev => ({ ...prev, systemInstruction: e.target.value }))} />
+                                <textarea className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white transition-all outline-none text-sm text-slate-600" value={aiConfig.systemInstruction} onChange={(e) => updateAiConfig({ systemInstruction: e.target.value })} />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -731,23 +775,23 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                     <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-4">أعداد المخرجات</h3>
                                     <div className="flex items-center justify-between">
                                         <label className="text-sm text-slate-600">عدد العناوين:</label>
-                                        <input type="number" min="1" max="50" className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl text-center" value={aiConfig.titlesCount} onChange={(e) => setAiConfig(prev => ({ ...prev, titlesCount: parseInt(e.target.value) }))} />
+                                        <input type="number" min="1" max="50" className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl text-center" value={aiConfig.titlesCount} onChange={(e) => updateAiConfig({ titlesCount: parseInt(e.target.value) })} />
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <label className="text-sm text-slate-600">عدد التصنيفات المقترحة:</label>
-                                        <input type="number" min="1" max="10" className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl text-center" value={aiConfig.categoriesCount} onChange={(e) => setAiConfig(prev => ({ ...prev, categoriesCount: parseInt(e.target.value) }))} />
+                                        <input type="number" min="1" max="10" className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl text-center" value={aiConfig.categoriesCount} onChange={(e) => updateAiConfig({ categoriesCount: parseInt(e.target.value) })} />
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <label className="text-sm text-slate-600">عدد الكلمات المفتاحية:</label>
-                                        <input type="number" min="1" max="50" className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl text-center" value={aiConfig.keywordsCount} onChange={(e) => setAiConfig(prev => ({ ...prev, keywordsCount: parseInt(e.target.value) }))} />
+                                        <input type="number" min="1" max="50" className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl text-center" value={aiConfig.keywordsCount} onChange={(e) => updateAiConfig({ keywordsCount: parseInt(e.target.value) })} />
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <label className="text-sm text-slate-600">عدد المصادر (APA):</label>
-                                        <input type="number" min="0" max="10" className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl text-center" value={aiConfig.sourcesCount} onChange={(e) => setAiConfig(prev => ({ ...prev, sourcesCount: parseInt(e.target.value) }))} />
+                                        <input type="number" min="0" max="10" className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl text-center" value={aiConfig.sourcesCount} onChange={(e) => updateAiConfig({ sourcesCount: parseInt(e.target.value) })} />
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <label className="text-sm text-slate-600">عدد مقترحات الربط:</label>
-                                        <input type="number" min="0" max="10" className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl text-center" value={aiConfig.linkingCount} onChange={(e) => setAiConfig(prev => ({ ...prev, linkingCount: parseInt(e.target.value) }))} />
+                                        <input type="number" min="0" max="10" className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl text-center" value={aiConfig.linkingCount} onChange={(e) => updateAiConfig({ linkingCount: parseInt(e.target.value) })} />
                                     </div>
                                 </div>
 
@@ -755,7 +799,7 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                     <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-4">تعليمات مخصصة</h3>
                                     <div className="space-y-2">
                                         <label className="text-xs text-slate-400">تعليمات العناوين:</label>
-                                        <textarea className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white" value={aiConfig.titlesInstruction} onChange={(e) => setAiConfig(prev => ({ ...prev, titlesInstruction: e.target.value }))} />
+                                        <textarea className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white" value={aiConfig.titlesInstruction} onChange={(e) => updateAiConfig({ titlesInstruction: e.target.value })} />
                                     </div>
 
                                     <div className="space-y-4 pt-4 border-t border-slate-100">
