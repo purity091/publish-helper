@@ -536,10 +536,15 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                 </button>
                             </div>
 
-                            {/* Results */}
+                            {/* Results - تظهر دائماً مع placeholder */}
                             <div className="space-y-6">
-                                {editableResult.suggestedCategories.length > 0 && (
-                                    <ResultCard title={`التصنيفات المقترحة (${editableResult.suggestedCategories.length})`} icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>} onCopy={() => copyToClipboard(editableResult.suggestedCategories.join('\n'))}>
+                                {/* التصنيفات المقترحة */}
+                                <ResultCard
+                                    title={`التصنيفات المقترحة ${editableResult.suggestedCategories.length > 0 ? `(${editableResult.suggestedCategories.length})` : ''}`}
+                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
+                                    onCopy={() => copyToClipboard(editableResult.suggestedCategories.join('\n'))}
+                                >
+                                    {editableResult.suggestedCategories.length > 0 ? (
                                         <div className="space-y-2">
                                             {editableResult.suggestedCategories.map((c, i) => (
                                                 <div key={i} className="flex gap-2">
@@ -548,15 +553,31 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                                 </div>
                                             ))}
                                         </div>
-                                    </ResultCard>
-                                )}
-
-                                <ResultCard title="الرابط المختصر (Slug)" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>} onCopy={() => copyToClipboard(editableResult.slug)}>
-                                    <input value={editableResult.slug} onChange={(e) => setEditableResult({ ...editableResult, slug: e.target.value })} className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl font-mono text-emerald-600 text-sm focus:bg-white outline-none" />
+                                    ) : (
+                                        <div className="text-center py-6 text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                                            <span className="text-2xl mb-2 block">🏷️</span>
+                                            <p className="text-sm">سيتم اقتراح التصنيفات المناسبة للمقال تلقائياً</p>
+                                        </div>
+                                    )}
                                 </ResultCard>
 
-                                {editableResult.titles.length > 0 && (
-                                    <ResultCard title={`عناوين مقترحة (${editableResult.titles.length})`} icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 6h16M4 12h16" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>} onCopy={() => copyToClipboard(editableResult.titles.join('\n'))}>
+                                {/* الرابط المختصر */}
+                                <ResultCard title="الرابط المختصر (Slug)" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>} onCopy={() => copyToClipboard(editableResult.slug)}>
+                                    <input
+                                        value={editableResult.slug}
+                                        onChange={(e) => setEditableResult({ ...editableResult, slug: e.target.value })}
+                                        placeholder="مثال: article-title-here"
+                                        className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl font-mono text-emerald-600 text-sm focus:bg-white outline-none placeholder:text-slate-300"
+                                    />
+                                </ResultCard>
+
+                                {/* العناوين المقترحة */}
+                                <ResultCard
+                                    title={`عناوين مقترحة ${editableResult.titles.length > 0 ? `(${editableResult.titles.length})` : ''}`}
+                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 6h16M4 12h16" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                                    onCopy={() => copyToClipboard(editableResult.titles.join('\n'))}
+                                >
+                                    {editableResult.titles.length > 0 ? (
                                         <div className="space-y-2">
                                             {editableResult.titles.map((t, i) => (
                                                 <div key={i} className="flex gap-2">
@@ -565,17 +586,35 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                                 </div>
                                             ))}
                                         </div>
-                                    </ResultCard>
-                                )}
+                                    ) : (
+                                        <div className="text-center py-6 text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                                            <span className="text-2xl mb-2 block">✍️</span>
+                                            <p className="text-sm">سيتم توليد عناوين متنوعة وجذابة للمقال</p>
+                                        </div>
+                                    )}
+                                </ResultCard>
 
-                                {editableResult.keywords.length > 0 && (
-                                    <ResultCard title="الكلمات المفتاحية" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>} onCopy={() => copyToClipboard(editableResult.keywords.join(', '))}>
-                                        <textarea value={editableResult.keywords.join(', ')} onChange={(e) => setEditableResult({ ...editableResult, keywords: e.target.value.split(',').map(s => s.trim()) })} className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 outline-none focus:bg-white resize-none" />
-                                    </ResultCard>
-                                )}
+                                {/* الكلمات المفتاحية */}
+                                <ResultCard
+                                    title="الكلمات المفتاحية"
+                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                                    onCopy={() => copyToClipboard(editableResult.keywords.join(', '))}
+                                >
+                                    <textarea
+                                        value={editableResult.keywords.join(', ')}
+                                        onChange={(e) => setEditableResult({ ...editableResult, keywords: e.target.value.split(',').map(s => s.trim()).filter(s => s) })}
+                                        placeholder="كلمة1, كلمة2, كلمة3..."
+                                        className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 outline-none focus:bg-white resize-none placeholder:text-slate-300"
+                                    />
+                                </ResultCard>
 
-                                {editableResult.teasers.length > 0 && (
-                                    <ResultCard title={`التشويقيات (${editableResult.teasers.length})`} icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>} onCopy={() => copyToClipboard(editableResult.teasers.join('\n'))}>
+                                {/* التشويقيات */}
+                                <ResultCard
+                                    title={`التشويقيات ${editableResult.teasers.length > 0 ? `(${editableResult.teasers.length})` : ''}`}
+                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                                    onCopy={() => copyToClipboard(editableResult.teasers.join('\n'))}
+                                >
+                                    {editableResult.teasers.length > 0 ? (
                                         <div className="space-y-4">
                                             {editableResult.teasers.map((s, i) => (
                                                 <div key={i} className="flex flex-col gap-1">
@@ -588,11 +627,21 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                                 </div>
                                             ))}
                                         </div>
-                                    </ResultCard>
-                                )}
+                                    ) : (
+                                        <div className="text-center py-6 text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                                            <span className="text-2xl mb-2 block">💬</span>
+                                            <p className="text-sm">سيتم توليد نصوص تشويقية قصيرة لجذب القراء</p>
+                                        </div>
+                                    )}
+                                </ResultCard>
 
-                                {editableResult.linkingSuggestions.length > 0 && (
-                                    <ResultCard title="مقترحات الربط الداخلي" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>} onCopy={() => copyToClipboard(editableResult.linkingSuggestions.map(s => `${s.title}: ${s.url}`).join('\n'))}>
+                                {/* مقترحات الربط الداخلي */}
+                                <ResultCard
+                                    title={`مقترحات الربط الداخلي ${editableResult.linkingSuggestions.length > 0 ? `(${editableResult.linkingSuggestions.length})` : ''}`}
+                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                                    onCopy={() => copyToClipboard(editableResult.linkingSuggestions.map(s => `${s.title}: ${s.url}`).join('\n'))}
+                                >
+                                    {editableResult.linkingSuggestions.length > 0 ? (
                                         <div className="space-y-4">
                                             {editableResult.linkingSuggestions.map((s, i) => (
                                                 <div key={i} className="bg-emerald-50/20 border border-emerald-100 p-4 rounded-2xl space-y-2">
@@ -607,11 +656,21 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                                 </div>
                                             ))}
                                         </div>
-                                    </ResultCard>
-                                )}
+                                    ) : (
+                                        <div className="text-center py-6 text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                                            <span className="text-2xl mb-2 block">🔗</span>
+                                            <p className="text-sm">سيتم اقتراح مقالات من مكتبتك للربط الداخلي</p>
+                                        </div>
+                                    )}
+                                </ResultCard>
 
-                                {editableResult.sources.length > 0 && (
-                                    <ResultCard title="المصادر (APA 8)" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>} onCopy={() => copyToClipboard(editableResult.sources.join('\n'))}>
+                                {/* المصادر */}
+                                <ResultCard
+                                    title={`المصادر (APA 8) ${editableResult.sources.length > 0 ? `(${editableResult.sources.length})` : ''}`}
+                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>}
+                                    onCopy={() => copyToClipboard(editableResult.sources.join('\n'))}
+                                >
+                                    {editableResult.sources.length > 0 ? (
                                         <div className="space-y-3">
                                             {editableResult.sources.map((s, i) => (
                                                 <div key={i} className="flex gap-2">
@@ -620,8 +679,13 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                                 </div>
                                             ))}
                                         </div>
-                                    </ResultCard>
-                                )}
+                                    ) : (
+                                        <div className="text-center py-6 text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                                            <span className="text-2xl mb-2 block">📚</span>
+                                            <p className="text-sm">سيتم توليد مصادر بتنسيق APA 8 للاستشهاد</p>
+                                        </div>
+                                    )}
+                                </ResultCard>
                             </div>
                         </div>
                     ) : view === 'categories' ? (
