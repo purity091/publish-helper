@@ -42,6 +42,45 @@ export interface AuthState {
     isAuthenticated: boolean;
 }
 
+// ============ التحقق من صلاحية الجلسة ============
+
+/**
+ * التحقق مما إذا كانت الجلسة المحفوظة لا تزال صالحة
+ * الجلسة تنتهي بعد 90 يومًا إذا لم يتم تسجيل الخروج
+ */
+export const isSessionStillValid = (): boolean => {
+    const rememberMeActive = localStorage.getItem('remember_me_active');
+    const sessionExpiresAt = localStorage.getItem('session_expires_at');
+
+    if (!rememberMeActive || !sessionExpiresAt) {
+        return true; // لا توجد جلسة محفوظة، دع Supabase يتحقق
+    }
+
+    const expiresAt = parseInt(sessionExpiresAt, 10);
+    const now = Date.now();
+
+    if (now > expiresAt) {
+        // انتهت صلاحية الجلسة، مسح البيانات
+        localStorage.removeItem('session_expires_at');
+        localStorage.removeItem('remember_me_active');
+        return false;
+    }
+
+    return true;
+};
+
+/**
+ * تحديث وقت انتهاء الجلسة (يُستدعى عند أي نشاط)
+ */
+export const refreshSessionExpiry = (): void => {
+    const rememberMeActive = localStorage.getItem('remember_me_active');
+    if (rememberMeActive) {
+        // تحديث وقت الانتهاء لـ 90 يوم من الآن
+        const expiresAt = Date.now() + (90 * 24 * 60 * 60 * 1000);
+        localStorage.setItem('session_expires_at', expiresAt.toString());
+    }
+};
+
 // ============ المصادقة ============
 
 export const signUp = async (email: string, password: string, fullName: string): Promise<{ success: boolean; error?: string }> => {
@@ -67,7 +106,10 @@ export const signUp = async (email: string, password: string, fullName: string):
     return { success: true };
 };
 
-export const signIn = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+// مدة الجلسة: 90 يوم بالثواني
+const SESSION_DURATION_SECONDS = 90 * 24 * 60 * 60; // 7,776,000 ثانية
+
+export const signIn = async (email: string, password: string, rememberMe: boolean = true): Promise<{ success: boolean; error?: string }> => {
     if (!supabase) {
         return { success: false, error: 'Supabase غير متصل' };
     }
@@ -79,6 +121,17 @@ export const signIn = async (email: string, password: string): Promise<{ success
 
     if (error) {
         return { success: false, error: error.message };
+    }
+
+    // إذا تم اختيار "تذكرني"، نحفظ علامة في localStorage
+    if (rememberMe && data.session) {
+        // تخزين وقت انتهاء الجلسة (90 يوم من الآن)
+        const expiresAt = Date.now() + (SESSION_DURATION_SECONDS * 1000);
+        localStorage.setItem('session_expires_at', expiresAt.toString());
+        localStorage.setItem('remember_me_active', 'true');
+    } else {
+        localStorage.removeItem('session_expires_at');
+        localStorage.removeItem('remember_me_active');
     }
 
     // العمليات الثانوية تُنفذ في الخلفية بدون انتظار (لا تؤخر تسجيل الدخول)
@@ -109,7 +162,7 @@ export const signIn = async (email: string, password: string): Promise<{ success
                                 .insert({
                                     user_id: userId,
                                     action_type: 'login',
-                                    metadata: {}
+                                    metadata: { remember_me: rememberMe }
                                 });
                         } catch (e) {
                             console.warn('Could not log activity:', e);
@@ -185,6 +238,11 @@ export const signOut = async (): Promise<void> => {
 
     // مسح cache المستخدم
     cachedUserProfile = null;
+
+    // مسح بيانات "تذكرني"
+    localStorage.removeItem('session_expires_at');
+    localStorage.removeItem('remember_me_active');
+    localStorage.removeItem('saved_user_email');
 
     await supabase.auth.signOut();
 };

@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as auth from '../services/authService';
-import { AlertTriangle } from 'lucide-react';
+import { getRememberMeStatus, setRememberMeStatus } from '../services/supabaseService';
+import { AlertTriangle, Check } from 'lucide-react';
 
 interface AuthPageProps {
     onSuccess: () => void;
@@ -10,8 +11,17 @@ interface AuthPageProps {
 export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(true); // مفعل افتراضياً
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // استرجاع البريد المحفوظ عند التحميل
+    useEffect(() => {
+        const savedEmail = localStorage.getItem('saved_user_email');
+        if (savedEmail && getRememberMeStatus()) {
+            setEmail(savedEmail);
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -19,8 +29,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
         setIsLoading(true);
 
         try {
-            const result = await auth.signIn(email, password);
+            const result = await auth.signIn(email, password, rememberMe);
             if (result.success) {
+                // حفظ حالة "تذكرني" والبريد الإلكتروني
+                setRememberMeStatus(rememberMe);
+                if (rememberMe) {
+                    localStorage.setItem('saved_user_email', email);
+                } else {
+                    localStorage.removeItem('saved_user_email');
+                }
                 onSuccess();
             } else {
                 setError(result.error || 'حدث خطأ في تسجيل الدخول');
@@ -81,6 +98,27 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                                 required
                                 minLength={6}
                             />
+                        </div>
+
+                        {/* Remember Me */}
+                        <div className="flex items-center justify-between">
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <div
+                                    onClick={() => setRememberMe(!rememberMe)}
+                                    className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer ${rememberMe
+                                            ? 'bg-emerald-500 border-emerald-500'
+                                            : 'border-white/30 bg-white/5 group-hover:border-white/50'
+                                        }`}
+                                >
+                                    {rememberMe && <Check className="w-3.5 h-3.5 text-white" />}
+                                </div>
+                                <span
+                                    onClick={() => setRememberMe(!rememberMe)}
+                                    className="text-sm text-slate-300 select-none"
+                                >
+                                    تذكرني لمدة 90 يوماً
+                                </span>
+                            </label>
                         </div>
 
                         {/* Error Message */}

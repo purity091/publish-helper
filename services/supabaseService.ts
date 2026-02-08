@@ -20,13 +20,32 @@ if (!hasValidCredentials) {
     console.warn('Supabase credentials not found or invalid. Using localStorage fallback.');
 }
 
-// إعدادات محسنة للأداء
+// مفتاح تخزين حالة "تذكرني"
+const REMEMBER_ME_KEY = 'auth_remember_me';
+
+// التحقق من حالة "تذكرني"
+export const getRememberMeStatus = (): boolean => {
+    return localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+};
+
+export const setRememberMeStatus = (remember: boolean): void => {
+    if (remember) {
+        localStorage.setItem(REMEMBER_ME_KEY, 'true');
+    } else {
+        localStorage.removeItem(REMEMBER_ME_KEY);
+    }
+};
+
+// إعدادات محسنة للأداء مع جلسة طويلة المدة (90 يوم)
 export const supabase: SupabaseClient | null = hasValidCredentials
     ? createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
             persistSession: true,
             autoRefreshToken: true,
             detectSessionInUrl: false, // تعطيل للسرعة
+            storage: localStorage, // استخدام localStorage للحفاظ على الجلسة
+            storageKey: 'prowriter-auth-token',
+            flowType: 'pkce',
         },
         global: {
             headers: {
