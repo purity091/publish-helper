@@ -24,6 +24,11 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
+    return;
+  }
+
   // Handle API requests separately
   if (url.pathname.includes('/api/') || url.hostname !== location.hostname) {
     // Network-first strategy for API calls
@@ -41,13 +46,16 @@ self.addEventListener('fetch', (event) => {
 async function networkFirstStrategy(request) {
   try {
     const networkResponse = await fetch(request);
-    
-    // Only cache successful responses
-    if (networkResponse.ok) {
-      const cache = await caches.open(ASSETS_CACHE);
-      cache.put(request, networkResponse.clone());
+
+    // Only cache successful responses and valid schemes/methods
+    if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+      const url = new URL(request.url);
+      if ((url.protocol === 'http:' || url.protocol === 'https:') && request.method === 'GET') {
+        const cache = await caches.open(ASSETS_CACHE);
+        cache.put(request, networkResponse.clone());
+      }
     }
-    
+
     return networkResponse;
   } catch (error) {
     // Fallback to cache if network fails
@@ -55,7 +63,7 @@ async function networkFirstStrategy(request) {
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // Return error page if both network and cache fail
     return new Response('Network error occurred', {
       status: 408,
@@ -70,16 +78,19 @@ async function cacheFirstStrategy(request) {
   if (cachedResponse) {
     return cachedResponse;
   }
-  
+
   try {
     const networkResponse = await fetch(request);
-    
-    // Only cache successful responses
-    if (networkResponse.ok) {
-      const cache = await caches.open(ASSETS_CACHE);
-      cache.put(request, networkResponse.clone());
+
+    // Only cache successful responses and valid schemes/methods
+    if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+      const url = new URL(request.url);
+      if ((url.protocol === 'http:' || url.protocol === 'https:') && request.method === 'GET') {
+        const cache = await caches.open(ASSETS_CACHE);
+        cache.put(request, networkResponse.clone());
+      }
     }
-    
+
     return networkResponse;
   } catch (error) {
     return new Response('Network error occurred', {
