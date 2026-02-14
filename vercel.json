@@ -9,8 +9,14 @@
         }
     ],
     "github": {
-        "enabled": false,
+        "enabled": true,
         "autoJobCancelation": true
     },
-    "automaticDeployments": false
+    "automaticDeployments": true,
+    "production": {
+        "deploymentEnabled": false
+    },
+    "preview": {
+        "deploymentEnabled": true
+    }
 }
