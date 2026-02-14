@@ -12,11 +12,7 @@
         "enabled": true,
         "autoJobCancelation": true
     },
-    "automaticDeployments": true,
-    "production": {
-        "deploymentEnabled": false
-    },
-    "preview": {
-        "deploymentEnabled": true
+    "gitMetadata": {
+        "enabled": false
     }
 }
