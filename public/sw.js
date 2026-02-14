@@ -24,8 +24,9 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests and non-http protocols
-  if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
+  // Skip non-GET requests and non-http protocols (including chrome-extension)
+  if (request.method !== 'GET' || 
+      (!url.protocol.startsWith('http') && !url.protocol.startsWith('https'))) {
     return;
   }
 
@@ -44,12 +45,18 @@ self.addEventListener('fetch', (event) => {
 
 // Network-first strategy with cache fallback
 async function networkFirstStrategy(request) {
+  const url = new URL(request.url);
+  
+  // Skip caching if the protocol is not HTTP/HTTPS
+  if (!url.protocol.startsWith('http')) {
+    return fetch(request);
+  }
+
   try {
     const networkResponse = await fetch(request);
 
     // Only cache successful responses and valid schemes/methods
     if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-      const url = new URL(request.url);
       if ((url.protocol === 'http:' || url.protocol === 'https:') && request.method === 'GET') {
         const cache = await caches.open(ASSETS_CACHE);
         cache.put(request, networkResponse.clone());
@@ -74,6 +81,13 @@ async function networkFirstStrategy(request) {
 
 // Cache-first strategy
 async function cacheFirstStrategy(request) {
+  const url = new URL(request.url);
+  
+  // Skip caching if the protocol is not HTTP/HTTPS
+  if (!url.protocol.startsWith('http')) {
+    return fetch(request);
+  }
+
   const cachedResponse = await caches.match(request);
   if (cachedResponse) {
     return cachedResponse;
@@ -84,7 +98,6 @@ async function cacheFirstStrategy(request) {
 
     // Only cache successful responses and valid schemes/methods
     if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-      const url = new URL(request.url);
       if ((url.protocol === 'http:' || url.protocol === 'https:') && request.method === 'GET') {
         const cache = await caches.open(ASSETS_CACHE);
         cache.put(request, networkResponse.clone());
