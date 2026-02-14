@@ -11,8 +11,5 @@
     "github": {
         "enabled": true,
         "autoJobCancelation": true
-    },
-    "gitMetadata": {
-        "enabled": false
     }
 }
