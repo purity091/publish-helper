@@ -7,5 +7,10 @@
             "source": "/(.*)",
             "destination": "/"
         }
-    ]
+    ],
+    "github": {
+        "enabled": false,
+        "autoJobCancelation": true
+    },
+    "automaticDeployments": false
 }

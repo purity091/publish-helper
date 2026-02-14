@@ -12,14 +12,26 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { generateTableOfContents, generateSectionContent } from './services/openaiService';
 import * as db from './services/supabaseService';
 import * as auth from './services/authService';
-import { ListChecks, Brain, PenLine, Eye, Rocket, Crown, CheckCircle } from 'lucide-react';
+import { ListChecks, Brain, PenLine, Eye, Rocket, Crown, CheckCircle, Download, Wifi, WifiOff } from 'lucide-react';
+import { usePWA } from './hooks/usePWA';
 
 const App: React.FC = () => {
   // Auth State
   const [currentUser, setCurrentUser] = useState<auth.UserProfile | null>(null);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
 
-  // s App State
+  // PWA State
+  const { 
+    installationStatus, 
+    isInstallButtonVisible, 
+    installPWA, 
+    isStandalone 
+  } = usePWA();
+  
+  // Online/Offline State
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // App State
   const [step, setStep] = useState<AppStep>(AppStep.SETUP);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
   const [state, setState] = useState<ArticleState>({
@@ -28,6 +40,20 @@ const App: React.FC = () => {
     isGeneratingToC: false,
     customMethods: []
   });
+
+  // Online/Offline effect
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Auth Effect - Check session on load
   useEffect(() => {
@@ -271,6 +297,28 @@ const App: React.FC = () => {
 
           {/* User Controls */}
           <div className="flex items-center gap-3">
+            {/* Online/Offline Indicator */}
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
+              isOnline 
+                ? 'bg-green-100 text-green-700' 
+                : 'bg-amber-100 text-amber-700'
+            }`}>
+              {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+              <span>{isOnline ? 'متصل' : 'غير متصل'}</span>
+            </div>
+
+            {/* PWA Install Button */}
+            {isInstallButtonVisible && (
+              <button
+                onClick={installPWA}
+                className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-xl text-sm font-bold hover:bg-indigo-200 transition-all flex items-center gap-2"
+                title="ثبت التطبيق"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden md:inline">ثبت</span>
+              </button>
+            )}
+
             {currentUser && (
               <>
                 {/* Admin Button */}

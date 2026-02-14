@@ -20,8 +20,9 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, '.'),
       }
     },
+    publicDir: 'public', // Explicitly set public directory
     build: {
-      //  ku تقسيم الكود لملفات أصغر
+      // تقسيم الكود لملفات أصغر
       rollupOptions: {
         output: {
           manualChunks: {
@@ -37,6 +38,7 @@ export default defineConfig(({ mode }) => {
       // تسريع البناء
       sourcemap: false,
       minify: 'esbuild', // أسرع من terser
+      copyPublicDir: true, // Ensure public directory is copied during build
     },
     // تحسين التطوير
     optimizeDeps: {
