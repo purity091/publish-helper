@@ -5,7 +5,7 @@ import { getRememberMeStatus, setRememberMeStatus } from '../services/supabaseSe
 import { AlertTriangle, Check } from 'lucide-react';
 
 interface AuthPageProps {
-    onSuccess: () => void;
+    onSuccess: (profile: auth.UserProfile | null) => void;
 }
 
 export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
@@ -38,7 +38,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                 } else {
                     localStorage.removeItem('saved_user_email');
                 }
-                onSuccess();
+                onSuccess(result.profile || null);
             } else {
                 setError(result.error || 'حدث خطأ في تسجيل الدخول');
             }
@@ -106,8 +106,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                                 <div
                                     onClick={() => setRememberMe(!rememberMe)}
                                     className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer ${rememberMe
-                                            ? 'bg-emerald-500 border-emerald-500'
-                                            : 'border-white/30 bg-white/5 group-hover:border-white/50'
+                                        ? 'bg-emerald-500 border-emerald-500'
+                                        : 'border-white/30 bg-white/5 group-hover:border-white/50'
                                         }`}
                                 >
                                     {rememberMe && <Check className="w-3.5 h-3.5 text-white" />}

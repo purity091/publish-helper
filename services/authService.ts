@@ -109,7 +109,7 @@ export const signUp = async (email: string, password: string, fullName: string):
 // مدة الجلسة: 90 يوم بالثواني
 const SESSION_DURATION_SECONDS = 90 * 24 * 60 * 60; // 7,776,000 ثانية
 
-export const signIn = async (email: string, password: string, rememberMe: boolean = true): Promise<{ success: boolean; error?: string }> => {
+export const signIn = async (email: string, password: string, rememberMe: boolean = true): Promise<{ success: boolean; error?: string; profile?: UserProfile | null }> => {
     if (!supabase) {
         return { success: false, error: 'Supabase غير متصل' };
     }
@@ -134,42 +134,61 @@ export const signIn = async (email: string, password: string, rememberMe: boolea
         localStorage.removeItem('remember_me_active');
     }
 
-    // العمليات الثانوية تُنفذ في الخلفية بدون انتظار (لا تؤخر تسجيل الدخول)
+    // جلب الملف الشخصي فوراً وحفظه في الكاش
+    let userProfile: UserProfile | null = null;
     if (data.user) {
         const userId = data.user.id;
 
-        // تنفيذ جميع العمليات في الخلفية بالتوازي
+        // جلب الملف الشخصي مع تحديث آخر تسجيل دخول بالتوازي
+        const [profileResult] = await Promise.all([
+            supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('id', userId)
+                .single(),
+            supabase
+                .from('user_profiles')
+                .update({ last_login_at: new Date().toISOString() })
+                .eq('id', userId)
+                .then(() => { })
+                .catch(() => { })
+        ]);
+
+        if (profileResult.data) {
+            userProfile = profileResult.data;
+        } else {
+            // fallback من بيانات auth
+            userProfile = {
+                id: userId,
+                email: data.user.email || '',
+                full_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'مستخدم',
+                role: 'editor',
+                avatar_url: null,
+                is_active: true,
+                last_login_at: new Date().toISOString(),
+                created_at: data.user.created_at || new Date().toISOString()
+            };
+        }
+
+        // حفظ في الكاش فوراً لتجنب استدعاءات إضافية
+        cachedUserProfile = { profile: userProfile, timestamp: Date.now() };
+
+        // العمليات الثانوية تُنفذ في الخلفية بدون انتظار
         (async () => {
             try {
                 await Promise.all([
-                    // تحديث وقت آخر تسجيل دخول
-                    (async () => {
-                        try {
-                            await supabase
-                                .from('user_profiles')
-                                .update({ last_login_at: new Date().toISOString() })
-                                .eq('id', userId);
-                        } catch (e) {
-                            console.warn('Could not update last_login_at:', e);
-                        }
-                    })(),
+                    // تسجيل النشاط
+                    supabase
+                        .from('activity_logs')
+                        .insert({
+                            user_id: userId,
+                            action_type: 'login',
+                            metadata: { remember_me: rememberMe }
+                        })
+                        .then(() => { })
+                        .catch((e: any) => console.warn('Could not log activity:', e)),
 
-                    // تسجيل النشاط (نسخة مبسطة بدون استدعاء getUser مرة أخرى)
-                    (async () => {
-                        try {
-                            await supabase
-                                .from('activity_logs')
-                                .insert({
-                                    user_id: userId,
-                                    action_type: 'login',
-                                    metadata: { remember_me: rememberMe }
-                                });
-                        } catch (e) {
-                            console.warn('Could not log activity:', e);
-                        }
-                    })(),
-
-                    // بدء جلسة جديدة (نسخة مبسطة)
+                    // بدء جلسة جديدة
                     startSessionFast(userId)
                 ]);
             } catch {
@@ -178,7 +197,7 @@ export const signIn = async (email: string, password: string, rememberMe: boolea
         })();
     }
 
-    return { success: true };
+    return { success: true, profile: userProfile };
 };
 
 // نسخة سريعة من startSession تستخدم userId مباشرة بدون استدعاء getUser
@@ -260,13 +279,15 @@ export const getCurrentUser = async (forceRefresh = false): Promise<UserProfile 
     }
 
     try {
-        const { data: { user } } = await supabase.auth.getUser();
+        // استخدام getSession بدلاً من getUser - يقرأ من localStorage أولاً (أسرع بكثير)
+        const { data: { session } } = await supabase.auth.getSession();
 
-        if (!user) {
+        if (!session?.user) {
             cachedUserProfile = { profile: null, timestamp: Date.now() };
             return null;
         }
 
+        const user = session.user;
         const { data: profile, error } = await supabase
             .from('user_profiles')
             .select('*')

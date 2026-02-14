@@ -242,9 +242,10 @@ const App: React.FC = () => {
 
   // Auth Required - Show Login
   if (!currentUser && db.isSupabaseAvailable()) {
-    return <AuthPage onSuccess={async () => {
-      const user = await auth.getCurrentUser();
-      setCurrentUser(user);
+    return <AuthPage onSuccess={(profile) => {
+      if (profile) {
+        setCurrentUser(profile);
+      }
     }} />;
   }
 
@@ -299,8 +300,8 @@ const App: React.FC = () => {
           <div className="flex items-center gap-3">
             {/* Online/Offline Indicator */}
             <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${isOnline
-                ? 'bg-green-100 text-green-700'
-                : 'bg-amber-100 text-amber-700'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-amber-100 text-amber-700'
               }`}>
               {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
               <span>{isOnline ? 'متصل' : 'غير متصل'}</span>
