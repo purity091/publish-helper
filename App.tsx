@@ -13,7 +13,7 @@ import { generateTableOfContents, generateSectionContent } from './services/open
 import * as db from './services/supabaseService';
 import * as auth from './services/authService';
 import { ListChecks, Brain, PenLine, Eye, Rocket, Crown, CheckCircle, Download, Wifi, WifiOff } from 'lucide-react';
-import { usePWA } from './hooks/usePWA';
+import { usePWA } from './src/hooks/usePWA';
 
 const App: React.FC = () => {
   // Auth State
@@ -21,13 +21,13 @@ const App: React.FC = () => {
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
 
   // PWA State
-  const { 
-    installationStatus, 
-    isInstallButtonVisible, 
-    installPWA, 
-    isStandalone 
+  const {
+    installationStatus,
+    isInstallButtonVisible,
+    installPWA,
+    isStandalone
   } = usePWA();
-  
+
   // Online/Offline State
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
@@ -298,11 +298,10 @@ const App: React.FC = () => {
           {/* User Controls */}
           <div className="flex items-center gap-3">
             {/* Online/Offline Indicator */}
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
-              isOnline 
-                ? 'bg-green-100 text-green-700' 
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${isOnline
+                ? 'bg-green-100 text-green-700'
                 : 'bg-amber-100 text-amber-700'
-            }`}>
+              }`}>
               {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
               <span>{isOnline ? 'متصل' : 'غير متصل'}</span>
             </div>
