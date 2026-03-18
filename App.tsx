@@ -439,6 +439,9 @@ const App: React.FC = () => {
             sections={state.sections}
             onBack={() => setStep(AppStep.WRITING)}
             onPublishReady={() => setStep(AppStep.PUBLISH_READY)}
+            onSectionsChange={(updatedSections) => {
+              setState(prev => ({ ...prev, sections: updatedSections }));
+            }}
           />
         )}
 

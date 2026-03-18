@@ -3,8 +3,12 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { ArticleSection, PublishMetadata, AIConfig, LinkingSuggestion } from '../types';
 import { generatePublishMetadata } from '../services/publishMetadataService';
 import * as db from '../services/supabaseService';
+import { isWordPressConfigured } from '../services/wordpressService';
 import ResultCard from './ResultCard';
-import { Tag, PenLine, MessageSquare, Link2, BookOpen, AlertTriangle, CheckCircle, PartyPopper } from 'lucide-react';
+import { WordPressSettings } from './WordPressSettings';
+import { WordPressPublishPanel } from './WordPressPublishPanel';
+import { ArticlePreviewPanel } from './ArticlePreviewPanel';
+import { Tag, PenLine, MessageSquare, Link2, BookOpen, AlertTriangle, CheckCircle, PartyPopper, Rocket, Calendar, FileText } from 'lucide-react';
 
 interface PublishReadyEditorProps {
     topic: string;
@@ -41,7 +45,7 @@ const initialEmptyResult: PublishMetadata = {
 
 const CONFIG_KEY = 'ai_config_settings_v2';
 
-type ViewMode = 'editor' | 'articles' | 'categories' | 'settings';
+type ViewMode = 'editor' | 'articles' | 'categories' | 'settings' | 'wordpress';
 
 // Cache للبيانات المحملة - يتم تحميلها مرة واحدة فقط
 let cachedArticles: db.PublishedArticle[] | null = null;
@@ -51,8 +55,9 @@ const CACHE_DURATION = 60000; // 1 دقيقة
 
 export const PublishReadyEditor: React.FC<PublishReadyEditorProps> = ({ topic, sections, onBack }) => {
     const [view, setView] = useState<ViewMode>('editor');
-    const [isLoading, setIsLoading] = useState(false); // لا نبدأ بـ true
+    const [isLoading, setIsLoading] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [wpConfigured, setWpConfigured] = useState(false);
 
     // حالة المقالات والتصنيفات - تبدأ من الـ cache إن وجد
     const [articles, setArticles] = useState<db.PublishedArticle[]>(cachedArticles || []);
@@ -131,6 +136,8 @@ export const PublishReadyEditor: React.FC<PublishReadyEditorProps> = ({ topic, s
     // تحميل البيانات عند فتح المكون (في الخلفية)
     useEffect(() => {
         loadData();
+        // التحقق من إعدادات WordPress
+        setWpConfigured(isWordPressConfigured());
     }, [loadData]);
 
     // دمج محتوى المقال
@@ -457,6 +464,14 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                         إدارة التصنيفات
                     </button>
 
+                    <button onClick={() => setView('wordpress')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${view === 'wordpress' ? 'bg-blue-50 text-blue-600 shadow-sm font-bold' : 'text-slate-500 hover:bg-slate-50'}`}>
+                        <Rocket className="w-5 h-5" />
+                        النشر على WordPress
+                        {wpConfigured && (
+                            <span className="mr-auto w-2 h-2 bg-blue-600 rounded-full"></span>
+                        )}
+                    </button>
+
                     <button onClick={() => setView('settings')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${view === 'settings' ? 'bg-emerald-50 text-emerald-600 shadow-sm font-bold' : 'text-slate-500 hover:bg-slate-50'}`}>
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         الإعدادات
@@ -494,6 +509,7 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                         {view === 'editor' && 'توليد بيانات النشر الوصفية'}
                         {view === 'articles' && 'إدارة المقالات المؤرشفة'}
                         {view === 'categories' && 'إدارة تصنيفات الموقع'}
+                        {view === 'wordpress' && 'النشر على WordPress'}
                         {view === 'settings' && 'تخصيص التعليمات والأعداد'}
                     </h2>
                     <div className="text-slate-400 text-xs">المقال: {topic}</div>
@@ -501,192 +517,246 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
 
                 <main className="p-5 pb-16">
                     {view === 'editor' ? (
-                        <div className="space-y-4 animate-in">
-                            {/* Generate Button */}
-                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-                                <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2 text-sm">
-                                    <span className="w-1.5 h-5 bg-emerald-600 rounded-full"></span>
-                                    توليد البيانات الوصفية للنشر
-                                </h3>
-                                <p className="text-slate-500 text-xs mb-3 line-clamp-1">
-                                    تحليل المقال "{topic}" وتوليد البيانات الوصفية
-                                </p>
-                                <button
-                                    onClick={handleGenerate}
-                                    disabled={isGenerating}
-                                    className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 text-sm"
-                                >
-                                    {isGenerating ? (
-                                        <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                    ) : (
-                                        <>بدء التوليد الذكي <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></>
-                                    )}
-                                </button>
-                                {error && <div className="mt-3 text-red-600 bg-red-50 p-3 rounded-lg text-xs border border-red-100">{error}</div>}
-                            </div>
-
-                            {/* Copy All Button */}
-                            <div className={`p-3 rounded-xl shadow-md flex items-center justify-between transition-all duration-500 sticky top-16 z-30 ${hasGeneratedOnce ? 'bg-emerald-600 translate-y-0 opacity-100' : 'bg-slate-200 translate-y-2 opacity-50 pointer-events-none'}`}>
-                                <div className="text-white">
-                                    <h4 className="font-bold text-sm">النسخة النهائية</h4>
-                                    <p className="text-[10px] opacity-80">نسخ كافة الحقول</p>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in">
+                            {/* Right Side - AI Metadata */}
+                            <div className="space-y-4">
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="w-8 h-8 bg-emerald-100 rounded-xl flex items-center justify-center">
+                                            <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 7.071l-.707.707M12 21v-1" /></svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 text-sm">بيانات النشر الوصفية</h3>
+                                            <p className="text-slate-500 text-xs">توليد تلقائي بالذكاء الاصطناعي</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleGenerate}
+                                        disabled={isGenerating}
+                                        className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        {isGenerating ? (
+                                            <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        ) : (
+                                            <>بدء التوليد الذكي <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></>
+                                        )}
+                                    </button>
+                                    {error && <div className="mt-3 text-red-600 bg-red-50 p-3 rounded-lg text-xs border border-red-100">{error}</div>}
                                 </div>
-                                <button disabled={!hasGeneratedOnce} onClick={copyAllResults} className={`px-5 py-2 rounded-lg font-bold transition-all flex items-center gap-2 shadow-lg text-sm ${globalCopyStatus ? 'bg-green-500 text-white' : 'bg-white text-emerald-600 hover:scale-105 active:scale-95'}`}>
-                                    {globalCopyStatus ? 'تم النسخ!' : 'نسخ الكل'}
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-                                </button>
+
+                                {/* Copy All Button */}
+                                <div className={`p-3 rounded-xl shadow-md flex items-center justify-between transition-all duration-500 sticky top-16 z-30 ${hasGeneratedOnce ? 'bg-emerald-600 translate-y-0 opacity-100' : 'bg-slate-200 translate-y-2 opacity-50 pointer-events-none'}`}>
+                                    <div className="text-white">
+                                        <h4 className="font-bold text-sm">النسخة النهائية</h4>
+                                        <p className="text-[10px] opacity-80">نسخ كافة الحقول</p>
+                                    </div>
+                                    <button disabled={!hasGeneratedOnce} onClick={copyAllResults} className={`px-5 py-2 rounded-lg font-bold transition-all flex items-center gap-2 shadow-lg text-sm ${globalCopyStatus ? 'bg-green-500 text-white' : 'bg-white text-emerald-600 hover:scale-105 active:scale-95'}`}>
+                                        {globalCopyStatus ? 'تم النسخ!' : 'نسخ الكل'}
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                                    </button>
+                                </div>
+
+                                {/* Results */}
+                                <div className="space-y-3">
+                                    {/* التصنيفات المقترحة */}
+                                    <ResultCard
+                                        title={`التصنيفات المقترحة ${editableResult.suggestedCategories.length > 0 ? `(${editableResult.suggestedCategories.length})` : ''}`}
+                                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
+                                        onCopy={() => copyToClipboard(editableResult.suggestedCategories.join('\n'))}
+                                    >
+                                        {editableResult.suggestedCategories.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {editableResult.suggestedCategories.map((c, i) => (
+                                                    <div key={i} className="flex gap-2">
+                                                        <span className="text-[10px] bg-emerald-50 text-emerald-500 px-2 py-3 rounded-lg font-bold">{i + 1}</span>
+                                                        <input value={c} onChange={(e) => updateListItem('suggestedCategories', i, e.target.value)} className="flex-1 bg-white border border-slate-100 p-2 rounded-xl text-sm text-slate-700 outline-none focus:border-emerald-300" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                                <Tag className="w-5 h-5 mx-auto mb-1" />
+                                                <p className="text-xs">سيتم اقتراح التصنيفات المناسبة تلقائياً</p>
+                                            </div>
+                                        )}
+                                    </ResultCard>
+
+                                    {/* الرابط المختصر */}
+                                    <ResultCard title="الرابط المختصر (Slug)" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>} onCopy={() => copyToClipboard(editableResult.slug)}>
+                                        <input
+                                            value={editableResult.slug}
+                                            onChange={(e) => setEditableResult({ ...editableResult, slug: e.target.value })}
+                                            placeholder="مثال: article-title-here"
+                                            className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl font-mono text-emerald-600 text-sm focus:bg-white outline-none placeholder:text-slate-300"
+                                        />
+                                    </ResultCard>
+
+                                    {/* العناوين المقترحة */}
+                                    <ResultCard
+                                        title={`عناوين مقترحة ${editableResult.titles.length > 0 ? `(${editableResult.titles.length})` : ''}`}
+                                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 6h16M4 12h16" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                                        onCopy={() => copyToClipboard(editableResult.titles.join('\n'))}
+                                    >
+                                        {editableResult.titles.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {editableResult.titles.map((t, i) => (
+                                                    <div key={i} className="flex gap-2">
+                                                        <span className="text-[10px] bg-slate-100 px-2 py-3 rounded-lg text-slate-400 font-bold">{i + 1}</span>
+                                                        <input value={t} onChange={(e) => updateListItem('titles', i, e.target.value)} className="flex-1 bg-white border border-slate-100 p-2 rounded-xl text-sm text-slate-700 outline-none focus:border-emerald-300" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                                <PenLine className="w-5 h-5 mx-auto mb-1" />
+                                                <p className="text-xs">سيتم توليد عناوين متنوعة وجذابة</p>
+                                            </div>
+                                        )}
+                                    </ResultCard>
+
+                                    {/* الكلمات المفتاحية */}
+                                    <ResultCard
+                                        title="الكلمات المفتاحية"
+                                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                                        onCopy={() => copyToClipboard(editableResult.keywords.join(', '))}
+                                    >
+                                        <textarea
+                                            value={editableResult.keywords.join(', ')}
+                                            onChange={(e) => setEditableResult({ ...editableResult, keywords: e.target.value.split(',').map(s => s.trim()).filter(s => s) })}
+                                            placeholder="كلمة1, كلمة2, كلمة3..."
+                                            className="w-full h-16 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 outline-none focus:bg-white resize-none placeholder:text-slate-300"
+                                        />
+                                    </ResultCard>
+
+                                    {/* التشويقيات */}
+                                    <ResultCard
+                                        title={`التشويقيات ${editableResult.teasers.length > 0 ? `(${editableResult.teasers.length})` : ''}`}
+                                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                                        onCopy={() => copyToClipboard(editableResult.teasers.join('\n'))}
+                                    >
+                                        {editableResult.teasers.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {editableResult.teasers.map((s, i) => (
+                                                    <div key={i} className="flex flex-col gap-0.5">
+                                                        {aiConfig.teaserPrompts[i] && (
+                                                            <div className="text-[9px] text-emerald-400 font-bold px-1 truncate">
+                                                                {i + 1}. {aiConfig.teaserPrompts[i]}
+                                                            </div>
+                                                        )}
+                                                        <textarea value={s} onChange={(e) => updateListItem('teasers', i, e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg text-xs text-slate-600 h-14 resize-none outline-none focus:bg-white focus:border-emerald-200" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                                <MessageSquare className="w-5 h-5 mx-auto mb-1" />
+                                                <p className="text-xs">سيتم توليد نصوص تشويقية قصيرة</p>
+                                            </div>
+                                        )}
+                                    </ResultCard>
+
+                                    {/* مقترحات الربط الداخلي */}
+                                    <ResultCard
+                                        title={`مقترحات الربط الداخلي ${editableResult.linkingSuggestions.length > 0 ? `(${editableResult.linkingSuggestions.length})` : ''}`}
+                                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                                        onCopy={() => copyToClipboard(editableResult.linkingSuggestions.map(s => `${s.title}: ${s.url}`).join('\n'))}
+                                    >
+                                        {editableResult.linkingSuggestions.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {editableResult.linkingSuggestions.map((s, i) => (
+                                                    <div key={i} className="bg-emerald-50/20 border border-emerald-100 p-2 rounded-lg space-y-1">
+                                                        <div className="flex gap-1.5 items-center">
+                                                            <span className="text-[9px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded font-bold">عنوان</span>
+                                                            <input value={s.title} onChange={(e) => updateLinkingItem(i, 'title', e.target.value)} className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg text-xs text-slate-700 outline-none" />
+                                                        </div>
+                                                        <div className="flex gap-1.5 items-center">
+                                                            <span className="text-[9px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded font-bold">رابط</span>
+                                                            <input value={s.url} onChange={(e) => updateLinkingItem(i, 'url', e.target.value)} className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg text-[10px] font-mono text-emerald-500 outline-none" />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                                <Link2 className="w-5 h-5 mx-auto mb-1" />
+                                                <p className="text-xs">سيتم اقتراح مقالات للربط الداخلي</p>
+                                            </div>
+                                        )}
+                                    </ResultCard>
+
+                                    {/* المصادر */}
+                                    <ResultCard
+                                        title={`المصادر (APA 8) ${editableResult.sources.length > 0 ? `(${editableResult.sources.length})` : ''}`}
+                                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>}
+                                        onCopy={() => copyToClipboard(editableResult.sources.join('\n'))}
+                                    >
+                                        {editableResult.sources.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {editableResult.sources.map((s, i) => (
+                                                    <div key={i} className="flex gap-1.5">
+                                                        <span className="text-[9px] bg-slate-100 px-1.5 py-2 rounded text-slate-400 font-bold">{i + 1}</span>
+                                                        <textarea value={s} onChange={(e) => updateListItem('sources', i, e.target.value)} className="flex-1 bg-slate-50 border border-slate-100 p-2 rounded-lg text-xs text-slate-700 h-14 resize-none outline-none focus:bg-white focus:border-emerald-300" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                                <BookOpen className="w-5 h-5 mx-auto mb-1" />
+                                                <p className="text-xs">سيتم توليد مصادر بتنسيق APA 8</p>
+                                            </div>
+                                        )}
+                                    </ResultCard>
+                                </div>
                             </div>
 
-                            {/* Results - تظهر دائماً مع placeholder */}
-                            <div className="space-y-3">
-                                {/* التصنيفات المقترحة */}
-                                <ResultCard
-                                    title={`التصنيفات المقترحة ${editableResult.suggestedCategories.length > 0 ? `(${editableResult.suggestedCategories.length})` : ''}`}
-                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
-                                    onCopy={() => copyToClipboard(editableResult.suggestedCategories.join('\n'))}
-                                >
-                                    {editableResult.suggestedCategories.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {editableResult.suggestedCategories.map((c, i) => (
-                                                <div key={i} className="flex gap-2">
-                                                    <span className="text-[10px] bg-emerald-50 text-emerald-500 px-2 py-3 rounded-lg font-bold">{i + 1}</span>
-                                                    <input value={c} onChange={(e) => updateListItem('suggestedCategories', i, e.target.value)} className="flex-1 bg-white border border-slate-100 p-2 rounded-xl text-sm text-slate-700 outline-none focus:border-emerald-300" />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                                            <Tag className="w-5 h-5 mx-auto mb-1" />
-                                            <p className="text-xs">سيتم اقتراح التصنيفات المناسبة تلقائياً</p>
-                                        </div>
-                                    )}
-                                </ResultCard>
-
-                                {/* الرابط المختصر */}
-                                <ResultCard title="الرابط المختصر (Slug)" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>} onCopy={() => copyToClipboard(editableResult.slug)}>
-                                    <input
-                                        value={editableResult.slug}
-                                        onChange={(e) => setEditableResult({ ...editableResult, slug: e.target.value })}
-                                        placeholder="مثال: article-title-here"
-                                        className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl font-mono text-emerald-600 text-sm focus:bg-white outline-none placeholder:text-slate-300"
+                            {/* Left Side - WordPress Publish Panel */}
+                            <div className="space-y-6">
+                                {/* WordPress Publish Panel */}
+                                {wpConfigured ? (
+                                    <WordPressPublishPanel
+                                        topic={topic}
+                                        sections={sections}
+                                        metadata={{
+                                            slug: editableResult.slug,
+                                            keywords: editableResult.keywords,
+                                            titles: editableResult.titles
+                                        }}
+                                        onSuccess={(post) => {
+                                            console.log('Post published successfully:', post);
+                                        }}
                                     />
-                                </ResultCard>
+                                ) : (
+                                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl shadow-lg shadow-blue-200 p-6 text-white">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                                                <Rocket className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold">النشر على WordPress</h3>
+                                                <p className="text-blue-100 text-xs">انشر مقالك مباشرة أو قم بجدولته</p>
+                                            </div>
+                                        </div>
 
-                                {/* العناوين المقترحة */}
-                                <ResultCard
-                                    title={`عناوين مقترحة ${editableResult.titles.length > 0 ? `(${editableResult.titles.length})` : ''}`}
-                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 6h16M4 12h16" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>}
-                                    onCopy={() => copyToClipboard(editableResult.titles.join('\n'))}
-                                >
-                                    {editableResult.titles.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {editableResult.titles.map((t, i) => (
-                                                <div key={i} className="flex gap-2">
-                                                    <span className="text-[10px] bg-slate-100 px-2 py-3 rounded-lg text-slate-400 font-bold">{i + 1}</span>
-                                                    <input value={t} onChange={(e) => updateListItem('titles', i, e.target.value)} className="flex-1 bg-white border border-slate-100 p-2 rounded-xl text-sm text-slate-700 outline-none focus:border-emerald-300" />
-                                                </div>
-                                            ))}
+                                        <div className="bg-amber-500/30 rounded-xl p-4 backdrop-blur-sm border border-amber-400/30">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <AlertTriangle className="w-5 h-5 text-amber-200" />
+                                                <span className="font-bold text-sm">WordPress غير مُكوّن</span>
+                                            </div>
+                                            <p className="text-amber-100 text-xs mb-4">
+                                                يرجى إضافة إعدادات WordPress أولاً
+                                            </p>
+                                            <button
+                                                onClick={() => setView('settings')}
+                                                className="w-full bg-white text-amber-600 hover:bg-amber-50 font-bold py-3 rounded-xl transition-all shadow-lg"
+                                            >
+                                                الذهاب للإعدادات
+                                            </button>
                                         </div>
-                                    ) : (
-                                        <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                                            <PenLine className="w-5 h-5 mx-auto mb-1" />
-                                            <p className="text-xs">سيتم توليد عناوين متنوعة وجذابة</p>
-                                        </div>
-                                    )}
-                                </ResultCard>
+                                    </div>
+                                )}
 
-                                {/* الكلمات المفتاحية */}
-                                <ResultCard
-                                    title="الكلمات المفتاحية"
-                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>}
-                                    onCopy={() => copyToClipboard(editableResult.keywords.join(', '))}
-                                >
-                                    <textarea
-                                        value={editableResult.keywords.join(', ')}
-                                        onChange={(e) => setEditableResult({ ...editableResult, keywords: e.target.value.split(',').map(s => s.trim()).filter(s => s) })}
-                                        placeholder="كلمة1, كلمة2, كلمة3..."
-                                        className="w-full h-16 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 outline-none focus:bg-white resize-none placeholder:text-slate-300"
-                                    />
-                                </ResultCard>
-
-                                {/* التشويقيات */}
-                                <ResultCard
-                                    title={`التشويقيات ${editableResult.teasers.length > 0 ? `(${editableResult.teasers.length})` : ''}`}
-                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>}
-                                    onCopy={() => copyToClipboard(editableResult.teasers.join('\n'))}
-                                >
-                                    {editableResult.teasers.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {editableResult.teasers.map((s, i) => (
-                                                <div key={i} className="flex flex-col gap-0.5">
-                                                    {aiConfig.teaserPrompts[i] && (
-                                                        <div className="text-[9px] text-emerald-400 font-bold px-1 truncate">
-                                                            {i + 1}. {aiConfig.teaserPrompts[i]}
-                                                        </div>
-                                                    )}
-                                                    <textarea value={s} onChange={(e) => updateListItem('teasers', i, e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-2 rounded-lg text-xs text-slate-600 h-14 resize-none outline-none focus:bg-white focus:border-emerald-200" />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                                            <MessageSquare className="w-5 h-5 mx-auto mb-1" />
-                                            <p className="text-xs">سيتم توليد نصوص تشويقية قصيرة</p>
-                                        </div>
-                                    )}
-                                </ResultCard>
-
-                                {/* مقترحات الربط الداخلي */}
-                                <ResultCard
-                                    title={`مقترحات الربط الداخلي ${editableResult.linkingSuggestions.length > 0 ? `(${editableResult.linkingSuggestions.length})` : ''}`}
-                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>}
-                                    onCopy={() => copyToClipboard(editableResult.linkingSuggestions.map(s => `${s.title}: ${s.url}`).join('\n'))}
-                                >
-                                    {editableResult.linkingSuggestions.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {editableResult.linkingSuggestions.map((s, i) => (
-                                                <div key={i} className="bg-emerald-50/20 border border-emerald-100 p-2 rounded-lg space-y-1">
-                                                    <div className="flex gap-1.5 items-center">
-                                                        <span className="text-[9px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded font-bold">عنوان</span>
-                                                        <input value={s.title} onChange={(e) => updateLinkingItem(i, 'title', e.target.value)} className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg text-xs text-slate-700 outline-none" />
-                                                    </div>
-                                                    <div className="flex gap-1.5 items-center">
-                                                        <span className="text-[9px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded font-bold">رابط</span>
-                                                        <input value={s.url} onChange={(e) => updateLinkingItem(i, 'url', e.target.value)} className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg text-[10px] font-mono text-emerald-500 outline-none" />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                                            <Link2 className="w-5 h-5 mx-auto mb-1" />
-                                            <p className="text-xs">سيتم اقتراح مقالات للربط الداخلي</p>
-                                        </div>
-                                    )}
-                                </ResultCard>
-
-                                {/* المصادر */}
-                                <ResultCard
-                                    title={`المصادر (APA 8) ${editableResult.sources.length > 0 ? `(${editableResult.sources.length})` : ''}`}
-                                    icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>}
-                                    onCopy={() => copyToClipboard(editableResult.sources.join('\n'))}
-                                >
-                                    {editableResult.sources.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {editableResult.sources.map((s, i) => (
-                                                <div key={i} className="flex gap-1.5">
-                                                    <span className="text-[9px] bg-slate-100 px-1.5 py-2 rounded text-slate-400 font-bold">{i + 1}</span>
-                                                    <textarea value={s} onChange={(e) => updateListItem('sources', i, e.target.value)} className="flex-1 bg-slate-50 border border-slate-100 p-2 rounded-lg text-xs text-slate-700 h-14 resize-none outline-none focus:bg-white focus:border-emerald-300" />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                                            <BookOpen className="w-5 h-5 mx-auto mb-1" />
-                                            <p className="text-xs">سيتم توليد مصادر بتنسيق APA 8</p>
-                                        </div>
-                                    )}
-                                </ResultCard>
+                                {/* Article Preview Panel */}
+                                <ArticlePreviewPanel topic={topic} sections={sections} />
                             </div>
                         </div>
                     ) : view === 'categories' ? (
@@ -824,9 +894,12 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                 </div>
                             </div>
                         </div>
-                    ) : (
+                    ) : view === 'settings' ? (
                         /* SETTINGS VIEW */
-                        <div className="max-w-4xl mx-auto space-y-8 animate-in">
+                        <div className="max-w-6xl mx-auto space-y-8 animate-in">
+                            {/* WordPress Settings */}
+                            <WordPressSettings onConfigChange={() => setWpConfigured(isWordPressConfigured())} />
+
                             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
                                 <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
                                     <span className="w-2 h-6 bg-emerald-600 rounded-full"></span>
@@ -886,6 +959,107 @@ ${editableResult.sources.filter(s => s).map((s, i) => `${i + 1}. ${s}`).join('\n
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    ) : (
+                        /* WORDPRESS VIEW */
+                        <div className="max-w-4xl mx-auto space-y-6 animate-in">
+                            {/* Quick Publish Card */}
+                            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl shadow-lg shadow-blue-200 p-8 text-white">
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                                        <Rocket className="w-7 h-7" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-bold">النشر على WordPress</h3>
+                                        <p className="text-blue-100 text-sm">انشر مقالك مباشرة على موقعك أو قم بجدولته</p>
+                                    </div>
+                                </div>
+
+                                {wpConfigured ? (
+                                    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <CheckCircle className="w-5 h-5 text-emerald-300" />
+                                            <span className="font-bold text-sm">WordPress متصل ومستعد</span>
+                                        </div>
+                                        <p className="text-blue-100 text-xs mb-4">
+                                            يمكنك الآن نشر المقال مباشرة أو اختيار وقت لاحق للجدولة
+                                        </p>
+                                        <button
+                                            onClick={() => setShowWordPressModal(true)}
+                                            className="w-full bg-white text-blue-600 hover:bg-blue-50 font-bold py-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
+                                        >
+                                            <Rocket className="w-5 h-5" />
+                                            فتح نافذة النشر
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="bg-amber-500/30 rounded-xl p-4 backdrop-blur-sm border border-amber-400/30">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <AlertTriangle className="w-5 h-5 text-amber-200" />
+                                            <span className="font-bold text-sm">WordPress غير مُكوّن</span>
+                                        </div>
+                                        <p className="text-amber-100 text-xs mb-4">
+                                            يرجى إضافة إعدادات WordPress أولاً لتمكين النشر المباشر
+                                        </p>
+                                        <button
+                                            onClick={() => setView('settings')}
+                                            className="w-full bg-white text-amber-600 hover:bg-amber-50 font-bold py-4 rounded-xl transition-all shadow-lg"
+                                        >
+                                            الذهاب لإعدادات WordPress
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Features Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center mb-4">
+                                        <Rocket className="w-5 h-5 text-emerald-600" />
+                                    </div>
+                                    <h4 className="font-bold text-slate-800 mb-2">نشر فوري</h4>
+                                    <p className="text-sm text-slate-500">انشر مقالك مباشرة على موقع WordPress بنقرة واحدة</p>
+                                </div>
+
+                                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                                        <Calendar className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <h4 className="font-bold text-slate-800 mb-2">جدولة مسبقة</h4>
+                                    <p className="text-sm text-slate-500">حدد وقتاً محدداً للنشر التلقائي للمقال</p>
+                                </div>
+
+                                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mb-4">
+                                        <FileText className="w-5 h-5 text-amber-600" />
+                                    </div>
+                                    <h4 className="font-bold text-slate-800 mb-2">حفظ كمسودة</h4>
+                                    <p className="text-sm text-slate-500">احفظ المقال كمسودة للتعديل والمراجعة لاحقاً</p>
+                                </div>
+
+                                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                                    <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+                                        <Tag className="w-5 h-5 text-purple-600" />
+                                    </div>
+                                    <h4 className="font-bold text-slate-800 mb-2">تصنيفات ووسوم</h4>
+                                    <p className="text-sm text-slate-500">أضف التصنيفات والوسوم المناسبة للمقال</p>
+                                </div>
+                            </div>
+
+                            {/* Instructions */}
+                            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                                <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                    <AlertTriangle className="w-5 h-5 text-blue-600" />
+                                    متطلبات النشر على WordPress
+                                </h4>
+                                <ol className="space-y-2 text-sm text-slate-600 list-decimal list-inside">
+                                    <li>تأكد من تثبيت WordPress على موقعك</li>
+                                    <li>قم بإنشاء كلمة مرور تطبيق من: المستخدم → الملف الشخصي</li>
+                                    <li>أضف إعدادات WordPress في قسم الإعدادات</li>
+                                    <li>تأكد من اتصالك بـ WordPress بنجاح</li>
+                                    <li>عد إلى هذه الصفحة وانقر على "فتح نافذة النشر"</li>
+                                </ol>
                             </div>
                         </div>
                     )}

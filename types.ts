@@ -69,3 +69,27 @@ export enum AppStep {
   PREVIEW = 'preview',
   PUBLISH_READY = 'publish_ready'
 }
+
+// WordPress Integration Types
+export interface WordPressPostStatus {
+  status: 'publish' | 'future' | 'draft' | 'pending' | 'private';
+  label: string;
+}
+
+export interface WordPressPublishOptions {
+  postStatus: 'publish' | 'future' | 'draft' | 'pending' | 'private';
+  scheduledDate?: string; // ISO 8601 format for scheduling
+  categories?: number[];
+  tags?: number[];
+  featuredImage?: number;
+  commentStatus: 'open' | 'closed';
+  pingStatus: 'open' | 'closed';
+  sticky: boolean;
+  format: 'standard' | 'aside' | 'chat' | 'gallery' | 'link' | 'image' | 'quote' | 'status' | 'video' | 'audio';
+}
+
+export interface WordPressConnectionTest {
+  success: boolean;
+  message: string;
+  siteInfo?: any;
+}
